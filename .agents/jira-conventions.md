@@ -1,8 +1,8 @@
 # Jira conventions for gru
 
-> Source of truth for Jira-side conventions. gru skills MUST read values from this file at runtime — never hardcode them. Update this file when conventions change; bump the schema version below if a change is breaking.
+> Source of truth for Jira- and Confluence-side conventions. gru skills MUST read values from this file at runtime — never hardcode them. Update this file when conventions change; bump the schema version below if a change is breaking.
 >
-> **Schema version**: 1
+> **Schema version**: 2
 > **Last verified against PLTPM**: 2026-05-02
 
 ## Site
@@ -10,6 +10,31 @@
 - **Cloud ID**: `58863ddf-2ab1-4cdf-bcce-31cf76e6d270`
 - **URL**: `https://moneylion.atlassian.net`
 - **Jira project in scope**: `PLTPM` ("Payments")
+
+## Confluence
+
+Required by `write-a-prd` (elevated PRDs) and `spike-and-report` (research sub-pages). Skills read these values at runtime; if either is missing or set to `<TBA — bootstrap>`, the skill MUST refuse with a one-line bootstrap pointer ("fill in `## Confluence` in `.agents/jira-conventions.md`").
+
+- **Confluence space key**: `<TBA — bootstrap>`
+- **Confluence space ID**: `<TBA — bootstrap>`
+- **Spikes parent page ID** (where research sub-pages land when their Research ticket has no Confluence-elevated parent PRD): `<TBA — bootstrap>`
+- **Spikes parent page title**: `Spikes` (display only — discovery is by id)
+
+### Sub-page parent resolution (used by `spike-and-report`)
+
+Three-level walk, first match wins:
+
+1. **Parent PRD has a Confluence page** — the Research ticket is `Implement`-linked to a parent Story / Technical Story whose description carries a Confluence smartlink (the elevated-PRD case from `write-a-prd`). Sub-page parent = that page's id.
+2. **Parent PRD inline (no Confluence page)** — the Research ticket has an `Implement` parent, but the parent's PRD lives inline in the Jira description. Sub-page parent = the configured **Spikes parent page id** above.
+3. **Orphan Research ticket** — no `Implement` link to any parent. Sub-page parent = the configured **Spikes parent page id** above.
+
+### Discovery (one-time)
+
+To populate the placeholders above, run any of:
+
+- Atlassian MCP: `atlassian.getAccessibleAtlassianResources` → list of cloud IDs; `atlassian.getConfluenceSpaces` for the matching cloud → space list.
+- Web UI: <https://moneylion.atlassian.net/wiki/> → space picker → URL bar shows `/spaces/<KEY>/`. Space ID is in the space-settings page URL.
+- Spikes parent page: create or pick a Confluence page titled `Spikes` under the chosen space (or wherever the team prefers research sub-pages to live); copy the page id from its URL (`...pageId=<id>`).
 
 ## Bootstrap checklist (one-time, manual)
 

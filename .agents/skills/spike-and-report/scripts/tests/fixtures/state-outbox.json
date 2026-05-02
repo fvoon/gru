@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "started_at": "2026-05-02T18:00:00+00:00",
+  "research_key": "PLTPM-21500",
+  "research_summary": "Spike: do we need a transactional outbox for wallet-to-wallet events?",
+  "parent_key": "PLTPM-21000",
+  "confluence_parent_page_id": "3333",
+  "confluence_parent_path": "elevated-parent",
+  "spikes_parent_page_id": "9876543",
+  "confluence_space_key": "PLTPM",
+  "confluence_space_id": "1048576",
+  "repos": ["payment-platform", "walletapi"],
+  "worktree_paths": {
+    "payment-platform": "/Users/fvoon/IdeaProjects/spike/PLTPM-21500/payment-platform",
+    "walletapi": "/Users/fvoon/IdeaProjects/spike/PLTPM-21500/walletapi"
+  },
+  "wall_clock_budget_minutes": 30,
+  "turn_budget": 30
+}

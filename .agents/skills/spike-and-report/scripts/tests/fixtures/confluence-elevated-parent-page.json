@@ -1,0 +1,18 @@
+{
+  "id": "3333",
+  "spaceId": "1048576",
+  "title": "Wallet-to-wallet event integration",
+  "ancestors": [
+    {"id": "1111", "title": "PLTPM home"},
+    {"id": "2222", "title": "Q2 PRDs"}
+  ],
+  "body": {
+    "storage": {
+      "value": "<h2>Problem Statement</h2><p>Wallet-to-wallet transfers currently rely on synchronous calls between payment-platform and walletapi. We want to introduce an event-driven backbone for cross-system wallet state propagation.</p><h2>Solution</h2><p>Stand up a `WalletEventPublisher` in payment-platform and a corresponding consumer in walletapi. Persistence is via the existing Axon event store.</p><h2>Out of Scope</h2><p>Reconciliation tooling for divergence between publisher and consumer. (Deferred to a follow-up PRD.)</p>",
+      "representation": "storage"
+    }
+  },
+  "_links": {
+    "webui": "/spaces/PLTPM/pages/3333/Wallet-to-wallet+event+integration"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "status": "ok",
+  "research_key": "PLTPM-21500",
+  "page_title": "Spike: do we need a transactional outbox for wallet-to-wallet events?",
+  "elapsed_minutes": 18,
+  "budget_minutes": 30,
+  "update_existing": false,
+  "actions": [
+    {
+      "step": 1,
+      "phase": "publish",
+      "tool": "atlassian.createConfluencePage",
+      "args": {
+        "spaceId": "1048576",
+        "parentPageId": "3333",
+        "title": "Spike: do we need a transactional outbox for wallet-to-wallet events?",
+        "body": {
+          "storage": {
+            "value": "<p># Spike report — PLTPM-21500</p>\n<h2>Question</h2>\n<p>**Spike: do we need a transactional outbox for wallet-to-wallet events?**</p>\n<p>Investigate whether the new wallet-to-wallet event publisher requires a transactional outbox or whether the existing Axon event store guarantees suffice. Cover failure-mode analysis (publisher down, consumer down, network partition) and recommend an approach with a high-level migration path.</p>\n<h2>Existing state (from graphify)</h2>\n<ul><li><code>WalletEventPublisher</code> (payment-platform) writes to <code>WalletEventStore</code> and publishes to <code>WalletEventConsumer</code> in walletapi.</li><li>Today the publish + persist happen in the same Axon <code>UnitOfWork</code> — committed atomically against the Axon event store.</li><li><code>WalletEventConsumer</code> is the only known consumer; no fan-out yet.</li></ul>\n<h2>What was tried</h2>\n<ul><li>**Approach A — rely on Axon event store guarantees only.** The existing <code>WalletEventPublisher.publish</code> path commits writes atomically inside the Axon <code>UnitOfWork</code>. Verified by reading commit <code>abc1234</code> on the spike branch.</li></ul>\n<ul><li>**Approach B — introduce a <code>wallet_outbox</code> table with a poller publishing to SQS.** Spiked a minimal table + poller in <code>payment-platform</code> (commit <code>def5678</code> on spike branch). Confirmed under simulated SQS outage that the poller backs off cleanly and the outbox table grows linearly.</li></ul>\n<p>  \u0000\u0000FENCE0\u0000\u0000</p>\n<ul><li>**Approach C — keep Axon, add idempotent retries on the consumer.** Quick read of <code>WalletEventConsumer</code> shows it already deduplicates by event id. So this is a superset of Approach A.</li></ul>\n<h2>What worked / what didn't</h2>\n<ul><li>Approach A is the simplest, but it couples publisher availability to consumer availability — observed during the simulated SQS outage that publisher backpressure built up after ~30 seconds.</li><li>Approach B's outbox table is the only option that fully decouples the two systems. It costs one row write per event but the row is small (event id + payload reference, not the payload itself).</li><li>Approach C alone is insufficient — without an outbox, retries don't help when the publisher itself can't reach the broker.</li></ul>\n<h2>Recommended approach</h2>\n<p>**Approach B — a transactional outbox is worth the row-write cost** because the cross-region SQS retry profile we observed in <code>infrastructure/sqs.yaml</code> already has a P99 of 4.2s, which is enough to cause publisher-side backpressure under load. The outbox table makes the publish path purely local and durable; the poller absorbs the broker variability asynchronously.</p>\n<h3>Recommended contract changes</h3>\n<ul><li>Add <code>wallet_outbox</code> table with columns <code>(id, payload_ref, created_at, published_at, attempt_count)</code>.</li><li>New SQS topic <code>wallet-events-outbox</code> (separate from the existing <code>wallet-events</code> topic so we can drain the outbox cleanly during cutover).</li><li>Consumer ack contract unchanged.</li></ul>\n<h2>Suggested follow-up tickets</h2>\n<ul><li><code>[BE] Add wallet_outbox table</code> — schema migration only, no functional change.</li><li><code>[BE] Wire poller to SQS for wallet_outbox</code> — the actual outbox publisher; gated behind a feature flag for the cutover.</li><li><code>[BE] Cutover plan for wallet-events -&gt; wallet-events-outbox</code> — a runbook + flag rollout, not code.</li><li><code>[Ops] Dashboards for outbox lag + attempt-count distribution</code> — observability for the new table.</li></ul>\n<h2>Spike metadata</h2>\n<ul><li>**Research ticket:** <code>PLTPM-21500</code></li><li>**Parent ticket:** <code>PLTPM-21000</code></li><li>**Repos:** <code>payment-platform</code>, <code>walletapi</code></li><li>**Worktree branch:** <code>spike/PLTPM-21500</code></li><li>**Started at:** 2026-05-02T18:00:00+00:00</li><li>**Elapsed:** 18 min</li><li>**Budget verdict:** within budget (18 / 30 min)</li></ul>",
+            "representation": "storage"
+          }
+        }
+      },
+      "purpose": "Create the spike report as a sub-page under the resolved Confluence parent (elevated PRD page or Spikes folder)."
+    },
+    {
+      "step": 2,
+      "phase": "comment",
+      "tool": "atlassian.addCommentToJiraIssue",
+      "args": {
+        "issueKey": "PLTPM-21500",
+        "body": "Spike report published: {{confluence_page_url}}. Worktree branch `spike/PLTPM-21500` left in place; see SPIKE_README.md for cleanup commands."
+      },
+      "purpose": "Post the Confluence page URL on the Research ticket so the audit trail lives in Jira too."
+    },
+    {
+      "step": 3,
+      "phase": "transition",
+      "tool": "atlassian.transitionJiraIssue",
+      "args": {
+        "issueKey": "PLTPM-21500",
+        "transition": {
+          "name": "Done"
+        }
+      },
+      "purpose": "Transition the Research ticket to Done. The agent must call atlassian.getJiraIssueTransitions(issueKey) first to find the actual transition id (workflow varies); this action carries only the target status name."
+    }
+  ]
+}

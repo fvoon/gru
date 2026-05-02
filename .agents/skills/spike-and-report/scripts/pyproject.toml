@@ -1,0 +1,27 @@
+[project]
+name = "spike-and-report-scripts"
+version = "0.1.0"
+description = "Deterministic helpers for the gru spike-and-report skill: validate Research target, bootstrap throwaway worktree, write Confluence research sub-page + Jira comment + Done transition."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]

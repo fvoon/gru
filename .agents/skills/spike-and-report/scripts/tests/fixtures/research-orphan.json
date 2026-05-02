@@ -1,0 +1,24 @@
+{
+  "status": "ok",
+  "research_key": "PLTPM-40050",
+  "research_summary": "Spike: investigate intermittent webhook delivery failures (no parent ticket)",
+  "research_question": "Standalone investigation prompted by an incident; not tied to a planned PRD. Determine whether the spikes in webhook 5xx are upstream (provider) or in our retry layer.",
+  "parent_key": null,
+  "parent_summary": null,
+  "parent_is_elevated": false,
+  "parent_confluence_url": null,
+  "parent_confluence_page_id": null,
+  "confluence_parent_page_id": "9876543",
+  "confluence_parent_path": "orphan",
+  "confluence_space_key": "PLTPM",
+  "confluence_space_id": "1048576",
+  "spikes_parent_page_id": "9876543",
+  "repos": ["payment-platform"],
+  "graphify": {
+    "nodes": [
+      {"name": "WebhookDispatcher", "repo": "payment-platform", "kind": "class"}
+    ],
+    "edges": [],
+    "communities": []
+  }
+}

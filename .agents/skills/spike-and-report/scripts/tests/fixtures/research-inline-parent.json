@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "research_key": "PLTPM-30100",
+  "research_summary": "Spike: validate Axon snapshot strategy for high-volume aggregates",
+  "research_question": "Confirm that the proposed snapshot interval (every 100 events) doesn't degrade replay throughput for the 50k-event-per-aggregate accounts.",
+  "parent_key": "PLTPM-30000",
+  "parent_summary": "Axon snapshot strategy",
+  "parent_is_elevated": false,
+  "parent_confluence_url": null,
+  "parent_confluence_page_id": null,
+  "confluence_parent_page_id": "9876543",
+  "confluence_parent_path": "inline-parent",
+  "confluence_space_key": "PLTPM",
+  "confluence_space_id": "1048576",
+  "spikes_parent_page_id": "9876543",
+  "repos": ["payment-platform"],
+  "graphify": {
+    "nodes": [
+      {"name": "WalletAggregate", "repo": "payment-platform", "kind": "aggregate"},
+      {"name": "WalletEventStore", "repo": "payment-platform", "kind": "class"}
+    ],
+    "edges": [
+      {"from": "WalletAggregate", "to": "WalletEventStore", "type": "stores-events-in"}
+    ],
+    "communities": []
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "status": "ok",
+  "research_key": "PLTPM-21500",
+  "research_summary": "Spike: do we need a transactional outbox for wallet-to-wallet events?",
+  "research_question": "Investigate whether the new wallet-to-wallet event publisher requires a transactional outbox or whether the existing Axon event store guarantees suffice. Cover failure-mode analysis (publisher down, consumer down, network partition) and recommend an approach with a high-level migration path.",
+  "parent_key": "PLTPM-21000",
+  "parent_summary": "Wallet-to-wallet event integration",
+  "parent_is_elevated": true,
+  "parent_confluence_url": "https://example.atlassian.net/wiki/spaces/PLTPM/pages/3333",
+  "parent_confluence_page_id": "3333",
+  "confluence_parent_page_id": "3333",
+  "confluence_parent_path": "elevated-parent",
+  "confluence_space_key": "PLTPM",
+  "confluence_space_id": "1048576",
+  "spikes_parent_page_id": "9876543",
+  "repos": ["payment-platform", "walletapi"],
+  "graphify": {
+    "nodes": [
+      {"name": "WalletEventPublisher", "repo": "payment-platform", "kind": "class"},
+      {"name": "WalletEventConsumer", "repo": "walletapi", "kind": "class"},
+      {"name": "WalletEventStore", "repo": "payment-platform", "kind": "class"}
+    ],
+    "edges": [
+      {"from": "WalletEventPublisher", "to": "WalletEventStore", "type": "uses"},
+      {"from": "WalletEventPublisher", "to": "WalletEventConsumer", "type": "publishes-to"}
+    ],
+    "communities": [
+      {
+        "name": "Wallet event flow",
+        "members": ["WalletEventPublisher", "WalletEventStore", "WalletEventConsumer"]
+      }
+    ]
+  }
+}

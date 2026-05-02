@@ -1,0 +1,21 @@
+{
+  "query": {
+    "question": "do we need a transactional outbox for wallet-to-wallet events?",
+    "scope": {"repos": ["payment-platform", "walletapi"]}
+  },
+  "nodes": [
+    {"name": "WalletEventPublisher", "repo": "payment-platform", "kind": "class"},
+    {"name": "WalletEventConsumer", "repo": "walletapi", "kind": "class"},
+    {"name": "WalletEventStore", "repo": "payment-platform", "kind": "class"}
+  ],
+  "edges": [
+    {"from": "WalletEventPublisher", "to": "WalletEventStore", "type": "uses"},
+    {"from": "WalletEventPublisher", "to": "WalletEventConsumer", "type": "publishes-to"}
+  ],
+  "communities": [
+    {
+      "name": "Wallet event flow",
+      "members": ["WalletEventPublisher", "WalletEventStore", "WalletEventConsumer"]
+    }
+  ]
+}
