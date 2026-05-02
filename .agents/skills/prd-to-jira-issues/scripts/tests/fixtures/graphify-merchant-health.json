@@ -1,0 +1,9 @@
+{
+  "modules": [
+    {"name": "ProcessorHealthClient", "repo": "payment-platform"},
+    {"name": "processor-health-cache", "repo": "payment-platform"}
+  ],
+  "edges": [
+    {"from": "ProcessorHealthClient", "to": "processor-health-cache", "type": "calls"}
+  ]
+}

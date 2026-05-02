@@ -1,0 +1,203 @@
+{
+  "status": "ok",
+  "parent_key": "PLTPM-99002",
+  "slice_count": 3,
+  "letters": [
+    "A",
+    "B",
+    "C"
+  ],
+  "actions": [
+    {
+      "step": 1,
+      "tool": "atlassian.createJiraIssue",
+      "args": {
+        "projectKey": "PLTPM",
+        "issueType": "Task",
+        "summary": "[BE] refactor TransferSaga return-handler chain into an explicit ReturnReceived aggregate event, add idempotency guard at the SQS consumer.",
+        "description": "## What to build (in payment-platform)\n\nrefactor TransferSaga return-handler chain into an explicit ReturnReceived aggregate event, add idempotency guard at the SQS consumer.\n\n## Background (auto-snapshot from parent — do not edit)\n\nThe TransferSaga in payment-platform occasionally double-reverses the wallet ledger when Payliance pushes a return mid-saga. Wallet ledger correctness depends on saga + walletapi cooperation.\n\n**payment-platform impact**:\n- payment-platform: refactor TransferSaga return-handler chain into an explicit ReturnReceived aggregate event, add idempotency guard at the SQS consumer.\n\n## Acceptance criteria\n\n- [ ] SqsConsumer rejects duplicate (transferId, returnReasonCode) pairs at the boundary; integration test with two duplicates seeded in the queue.\n- [ ] TransferSaga emits a single ReturnReceived event per unique tuple; unit test on the saga state machine.\n- [ ] Backfill job replays in-flight saga state behind the transfer-saga-v3 Split.io flag; smoke test against a recorded fixture set.\n\n## Implementation Hints (graphify-derived)\n\n- Modules to touch: TransferSaga, SqsConsumer\n\n## Blocked by\n\n- Slice B\n\n## User stories addressed\n\n- User story 1 (from parent PLTPM-99002)\n- User story 2 (from parent PLTPM-99002)\n- User story 3 (from parent PLTPM-99002)",
+        "components": [
+          {
+            "name": "payment-platform"
+          }
+        ]
+      },
+      "stores_as": "slice_A_key",
+      "purpose": "Create slice A as a Task child of PLTPM-99002."
+    },
+    {
+      "step": 2,
+      "tool": "atlassian.createJiraIssue",
+      "args": {
+        "projectKey": "PLTPM",
+        "issueType": "Task",
+        "summary": "[BE] add deduplicated ledger-reversal entry point keyed on (transferId, returnReasonCode); reject duplicates at the API boundary.",
+        "description": "## What to build (in walletapi)\n\nadd deduplicated ledger-reversal entry point keyed on (transferId, returnReasonCode); reject duplicates at the API boundary.\n\n## Background (auto-snapshot from parent — do not edit)\n\nThe TransferSaga in payment-platform occasionally double-reverses the wallet ledger when Payliance pushes a return mid-saga. Wallet ledger correctness depends on saga + walletapi cooperation.\n\n**walletapi impact**:\n- walletapi: add deduplicated ledger-reversal entry point keyed on (transferId, returnReasonCode); reject duplicates at the API boundary.\n\n## Acceptance criteria\n\n- [ ] New POST endpoint `/ledger/reversal` enforces a unique index on (transferId, returnReasonCode); integration test for duplicate insert returns 409.\n- [ ] Existing reversal callers continue to work without dedup key during a deprecation window; backwards-compatibility test.\n- [ ] Metrics emitted for duplicate-suppressed calls; metrics test asserts counter increments.\n\n## Implementation Hints (graphify-derived)\n\n- Modules to touch: WalletLedgerClient\n\n## Blocked by\n\n- None — can start immediately\n\n## User stories addressed\n\n- User story 1 (from parent PLTPM-99002)\n- User story 2 (from parent PLTPM-99002)\n- User story 3 (from parent PLTPM-99002)",
+        "components": [
+          {
+            "name": "walletapi"
+          }
+        ]
+      },
+      "stores_as": "slice_B_key",
+      "purpose": "Create slice B as a Task child of PLTPM-99002."
+    },
+    {
+      "step": 3,
+      "tool": "atlassian.createJiraIssue",
+      "args": {
+        "projectKey": "PLTPM",
+        "issueType": "Research ",
+        "summary": "Spike: confirm SQS retry semantics for duplicate-suppression at the consumer boundary.",
+        "description": "## Investigation\n\nconfirm SQS retry semantics for duplicate-suppression at the consumer boundary.\n\nDocument findings in a comment on this issue and link any follow-up tickets.\n\n## Background (auto-snapshot from parent — do not edit)\n\nThe TransferSaga in payment-platform occasionally double-reverses the wallet ledger when Payliance pushes a return mid-saga. Wallet ledger correctness depends on saga + walletapi cooperation.\n\n**payment-platform impact**:\n- payment-platform: refactor TransferSaga return-handler chain into an explicit ReturnReceived aggregate event, add idempotency guard at the SQS consumer.\n\n## Acceptance criteria\n\n- [ ] Findings documented in a comment on this issue covering: visibility timeout behavior, redelivery counts, dead-letter routing.\n- [ ] If findings invalidate the dedup design, a follow-up ticket is filed and linked.\n\n## Implementation Hints (graphify-derived)\n\n- Modules to touch: (unknown — fill from graphify)\n\n## Blocked by\n\n- None — can start immediately\n\n## User stories addressed\n\n- (none — derived from parent PLTPM-99002)",
+        "components": [
+          {
+            "name": "payment-platform"
+          }
+        ]
+      },
+      "stores_as": "slice_C_key",
+      "purpose": "Create slice C as a Research child of PLTPM-99002."
+    },
+    {
+      "step": 4,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Development",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 5,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Code Review 1",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 6,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Code Review 2",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 7,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Test case creation",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 8,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Test case execution",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 9,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_B_key}}",
+        "summary": "Development",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 10,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_B_key}}",
+        "summary": "Code Review 1",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 11,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_B_key}}",
+        "summary": "Code Review 2",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 12,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_B_key}}",
+        "summary": "Test case creation",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 13,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_B_key}}",
+        "summary": "Test case execution",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 14,
+      "tool": "atlassian.createIssueLink",
+      "args": {
+        "type": "Implement",
+        "inwardIssue": "PLTPM-99002",
+        "outwardIssue": "{{slice_A_key}}"
+      },
+      "purpose": "Mark slice A as implementing PLTPM-99002."
+    },
+    {
+      "step": 15,
+      "tool": "atlassian.createIssueLink",
+      "args": {
+        "type": "Implement",
+        "inwardIssue": "PLTPM-99002",
+        "outwardIssue": "{{slice_B_key}}"
+      },
+      "purpose": "Mark slice B as implementing PLTPM-99002."
+    },
+    {
+      "step": 16,
+      "tool": "atlassian.createIssueLink",
+      "args": {
+        "type": "Implement",
+        "inwardIssue": "PLTPM-99002",
+        "outwardIssue": "{{slice_C_key}}"
+      },
+      "purpose": "Mark slice C as implementing PLTPM-99002."
+    },
+    {
+      "step": 17,
+      "tool": "atlassian.createIssueLink",
+      "args": {
+        "type": "Blocks",
+        "inwardIssue": "{{slice_B_key}}",
+        "outwardIssue": "{{slice_A_key}}"
+      },
+      "purpose": "Slice A is blocked by slice B (per redline depends_on: ...)."
+    }
+  ]
+}

@@ -46,7 +46,12 @@ tmp/
 .agents/skills/*/drafts/*
 !.agents/skills/*/drafts/.gitkeep
 
-# python build / install artifacts inside skill scripts
+# prd-to-jira-issues / future-skill redlines (per-skill, gitignored, .gitkeep preserved)
+.agents/skills/*/redlines/*
+!.agents/skills/*/redlines/.gitkeep
+
+# python build / install artifacts inside skill scripts and shared lib
 .agents/skills/*/scripts/*.egg-info/
 .agents/skills/*/scripts/.pytest_cache/
 .agents/skills/*/scripts/.ruff_cache/
+.agents/skills/_lib/__pycache__/

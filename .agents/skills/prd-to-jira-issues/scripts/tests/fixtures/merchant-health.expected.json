@@ -1,0 +1,87 @@
+{
+  "status": "ok",
+  "parent_key": "PLTPM-99001",
+  "slice_count": 1,
+  "letters": [
+    "A"
+  ],
+  "actions": [
+    {
+      "step": 1,
+      "tool": "atlassian.createJiraIssue",
+      "args": {
+        "projectKey": "PLTPM",
+        "issueType": "Task",
+        "summary": "[BE] extend ProcessorHealthClient with merchant-scoped lookup, add DEGRADED enum + reason-code list, plumb scope through the existing health cache.",
+        "description": "## What to build (in payment-platform)\n\nextend ProcessorHealthClient with merchant-scoped lookup, add DEGRADED enum + reason-code list, plumb scope through the existing health cache.\n\n## Background (auto-snapshot from parent — do not edit)\n\nToday the processor-health endpoint reports a single global value per processor. Merchants cannot distinguish their own scope.\n\n**payment-platform impact**:\n- payment-platform: extend ProcessorHealthClient with merchant-scoped lookup, add DEGRADED enum + reason-code list, plumb scope through the existing health cache.\n\n## Acceptance criteria\n\n- [ ] `GET /processor-health?merchantId=X` returns scoped data; integration test against the merchant-config fixture.\n- [ ] DEGRADED status returned when 5xx rate exceeds threshold; unit test on the reason-code mapper.\n- [ ] Cache key includes (processor, merchantId); existing cache hits unaffected; cache-stats unit test.\n\n## Implementation Hints (graphify-derived)\n\n- Modules to touch: ProcessorHealthClient, processor-health-cache\n\n## Blocked by\n\n- None — can start immediately\n\n## User stories addressed\n\n- User story 1 (from parent PLTPM-99001)\n- User story 2 (from parent PLTPM-99001)\n- User story 3 (from parent PLTPM-99001)",
+        "components": [
+          {
+            "name": "payment-platform"
+          }
+        ]
+      },
+      "stores_as": "slice_A_key",
+      "purpose": "Create slice A as a Task child of PLTPM-99001."
+    },
+    {
+      "step": 2,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Development",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 3,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Code Review 1",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 4,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Code Review 2",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 5,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Test case creation",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 6,
+      "tool": "atlassian.createJiraSubtask",
+      "args": {
+        "parentIssueKey": "{{slice_A_key}}",
+        "summary": "Test case execution",
+        "description": ""
+      },
+      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
+    },
+    {
+      "step": 7,
+      "tool": "atlassian.createIssueLink",
+      "args": {
+        "type": "Implement",
+        "inwardIssue": "PLTPM-99001",
+        "outwardIssue": "{{slice_A_key}}"
+      },
+      "purpose": "Mark slice A as implementing PLTPM-99001."
+    }
+  ]
+}

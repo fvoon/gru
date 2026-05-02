@@ -32,14 +32,17 @@ import re
 import sys
 from pathlib import Path
 
-# Reuse the parser from significance_check; one source of truth for section splitting.
+# Markdown helpers live in _lib (shared across skills); ELEVATE_MARKER stays in
+# significance_check because it's specific to write-a-prd's heuristic.
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
+_LIB_PATH = SCRIPT_DIR.parent.parent.parent / "_lib"
+if str(_LIB_PATH) not in sys.path:
+    sys.path.insert(0, str(_LIB_PATH))
 
-from significance_check import (  # noqa: E402
-    ELEVATE_MARKER,
-    split_top_level_sections,
-)
+from markdown import extract_h1_title, split_top_level_sections  # noqa: E402
+
+from significance_check import ELEVATE_MARKER  # noqa: E402
 
 # ----- canonical config (must stay in lockstep with .agents/jira-conventions.md) -----
 
@@ -82,12 +85,6 @@ class InvalidDraft(Exception):
 
 
 # ----- parsing helpers -----
-
-
-def extract_h1_title(text: str) -> str:
-    """Return the first `# ` header text, or '' if absent."""
-    m = re.search(r"^#\s+(.+?)\s*$", text, re.MULTILINE)
-    return m.group(1).strip() if m else ""
 
 
 _AS_ACTOR_RE = re.compile(

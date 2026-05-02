@@ -1,0 +1,11 @@
+{
+  "modules": [
+    {"name": "TransferSaga", "repo": "payment-platform"},
+    {"name": "SqsConsumer", "repo": "payment-platform"},
+    {"name": "WalletLedgerClient", "repo": "walletapi"}
+  ],
+  "edges": [
+    {"from": "SqsConsumer", "to": "TransferSaga", "type": "publishes"},
+    {"from": "TransferSaga", "to": "WalletLedgerClient", "type": "calls"}
+  ]
+}

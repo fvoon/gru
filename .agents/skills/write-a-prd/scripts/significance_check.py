@@ -26,6 +26,13 @@ import re
 import sys
 from pathlib import Path
 
+# Shared markdown helpers live one level up so multiple skills can reuse them.
+_LIB_PATH = Path(__file__).resolve().parent.parent.parent / "_lib"
+if str(_LIB_PATH) not in sys.path:
+    sys.path.insert(0, str(_LIB_PATH))
+
+from markdown import split_top_level_sections  # noqa: E402
+
 ELEVATE_MARKER = "<!-- elevate-to-confluence -->"
 USER_STORY_THRESHOLD = 10
 CROSS_APP_THRESHOLD = 3
@@ -37,29 +44,6 @@ REQUIRED_SECTIONS = ("User Stories", "Cross-Application Impact")
 
 class MalformedDraft(Exception):
     """Raised when a draft is missing sections required by the significance heuristic."""
-
-
-def split_top_level_sections(text: str) -> dict[str, str]:
-    """Split markdown into top-level sections by `^## ` header.
-
-    Returns {title: body}. Body excludes the header line itself. The leading prologue
-    (before any `## ` header) is stored under the empty-string key.
-    """
-    sections: dict[str, str] = {}
-    current_title = ""
-    current_lines: list[str] = []
-    header_re = re.compile(r"^##\s+(.+?)\s*$")
-
-    for line in text.splitlines():
-        m = header_re.match(line)
-        if m:
-            sections[current_title] = "\n".join(current_lines).rstrip()
-            current_title = m.group(1).strip()
-            current_lines = []
-        else:
-            current_lines.append(line)
-    sections[current_title] = "\n".join(current_lines).rstrip()
-    return sections
 
 
 _NUMBERED_ITEM_RE = re.compile(r"^\d+\.\s+\S", re.MULTILINE)
