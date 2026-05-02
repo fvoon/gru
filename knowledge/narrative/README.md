@@ -58,13 +58,50 @@ After bootstrap, in Claude Code from `~/payments-graph/`:
 
 ### Maintenance ritual
 
-The merged corpus must stay current for the cohesion KB to be useful. Pick one (and document the choice below):
+The merged corpus must stay current for the cohesion KB to be useful. The chosen ritual is **demo-time `--watch`, ad-hoc `graphify update` otherwise**. Per-repo git hooks were considered and rejected (see "Why not per-repo hooks" below).
 
-| Option | Trade-off | When to choose |
-|---|---|---|
-| **`graphify --watch ~/payments-graph/`** in a background terminal | Simple, ephemeral, instant rebuild on file save (AST only). Doc/image changes notify but don't auto-LLM-rebuild — run `--update` for those. | During active gru sessions where multiple agents are writing in parallel. |
-| **Per-repo post-commit hooks** (`graphify hook install` in each product repo) | Durable, runs once per commit, no background process. Open question: does it cooperate with the merged-corpus layout? | When gru is used intermittently and a stale graph would be a footgun. |
+#### Demo / active-session use → `graphify --watch`
 
-**Open question (from [`../../docs/plan.md`](../../docs/plan.md))**: per-repo `graphify hook install` was designed for single-corpus layouts. Verify it correctly drives the merged-corpus rebuild before defaulting to it. If verification fails, default to `--watch`.
+When you're about to demo gru, run multiple agents in parallel, or otherwise expect the corpus to change rapidly during the session:
 
-**Chosen approach for our team**: TBA — fill in once decided.
+```bash
+cd ~/payments-graph
+graphify --watch .
+```
+
+The watcher is a **foreground process** in that terminal — leave it running, switch tabs, do your work; it rebuilds the AST graph on every file save. **Stop it deliberately when you're done** — see "Stopping / disabling" below. We do NOT run this as an always-on daemon; the cost (background CPU, surprise rebuilds, divergent graph state across machines) is not worth it outside an active session.
+
+Note: `--watch` rebuilds AST-only on file changes. Doc / image changes are noticed but not LLM-rebuilt — run `graphify update .` to pick those up.
+
+#### Quiescent / non-demo use → `graphify update` ad-hoc
+
+The rest of the time, leave the graph as-is. Before invoking a gru skill that would benefit from a fresh graph, run a one-shot update:
+
+```bash
+cd ~/payments-graph && graphify update .
+```
+
+This is no-LLM (fast), idempotent, and writes to the same `~/payments-graph/graphify-out/` the MCP server queries.
+
+#### Stopping / disabling
+
+The watcher has no daemon supervisor; you stop the process directly.
+
+| Started as | Stop with |
+|---|---|
+| `graphify --watch .` in a terminal (foreground) | `Ctrl-C` in that terminal |
+| Backgrounded with `&` | `pkill -f 'graphify .* watch'` (or `kill <pid>` if you tracked it) |
+
+If anyone in the team installed per-repo git hooks before reading this section (or migrated from another setup), uninstall them per repo:
+
+```bash
+for r in payment-platform walletapi infrastructure spring-boot-starters; do
+  (cd ~/IdeaProjects/$r && graphify hook uninstall)
+done
+```
+
+#### Why not per-repo hooks
+
+`graphify hook install` writes a `post-commit` hook that calls `_rebuild_code(Path('.'))` from `[graphify/hooks.py](https://github.com/safishamsi/graphify/blob/main/graphify/hooks.py)` (lines 64-82 in v0.6.2). `Path('.')` resolves to the **per-repo** working directory at hook execution time — not `~/payments-graph/`. The hook would rebuild `~/IdeaProjects/<repo>/graphify-out/` (per-repo graph), leaving `~/payments-graph/graphify-out/` (merged corpus, what gru's MCP queries) stale.
+
+Source-level inspection was sufficient verification; no commit-cycle test was needed. If graphify ever gains a `--corpus-dir` flag for hooks, revisit this decision.

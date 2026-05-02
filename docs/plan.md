@@ -177,7 +177,7 @@ flowchart LR
 
 1. `**gru` repo scaffold** — directory layout, symlinks, README + AGENTS.md framing the metaphor, LICENSE, .gitignore, empty `scripts/` placeholder.
 2. **Graphify bootstrap** — stand up `~/payments-graph/` with the 4 product repos as siblings; install graphify; run `/graphify .`; review GRAPH_REPORT.md.
-3. **Graphify maintenance ritual** — `--watch` or per-repo post-commit hooks; document in `knowledge/narrative/README.md`.
+3. **Graphify maintenance ritual** — ✅ resolved: per-repo `graphify hook install` rebuilds the per-repo graph (not the merged corpus the gru MCP queries — verified by source inspection of `graphify/hooks.py`). Chosen ritual is `graphify --watch ~/payments-graph/` for active sessions / demos and `graphify update .` ad-hoc otherwise; `--watch` is explicitly demo-time only (not a daemon), with stop / disable mechanics documented. Recorded in `knowledge/narrative/README.md` and `scripts/setup-graphify.sh`.
 4. **Jira bootstrap** — ✅ workflow statuses discovered (`To Do → next → In Progress → ...`); ✅ `Implement` link type confirmed; ⚠️ 4 repo-shaped Components need to be created via Jira admin (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`).
 5. **Narrative — flows** — ⚠️ DRAFTED, pending PM/eng review: `wallet-topup`, `transfer-authorization`, `ach-return` (each carries `<!-- TODO -->` markers for second-hand assumptions). Pick remaining 0-2 with PMs after review.
 6. **Narrative — glossary** — cross-app semantic mismatches, seeded from graphify god nodes.

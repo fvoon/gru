@@ -169,19 +169,19 @@ cat <<NEXT
      $PARENT/graphify-out/GRAPH_REPORT.md
    for god-nodes summary, surprising connections, and false-positive edges to prune.
 
-4. For ongoing maintenance, pick one:
+4. Maintenance ritual — demo-time watcher only (NOT a daemon):
 
-   a) Foreground watcher (simple, ephemeral, leave running during gru work):
+   a) During an active gru session (demo, parallel-agent run), start the watcher
+      in a dedicated terminal and stop it with Ctrl-C when you're done:
         cd $PARENT && graphify --watch .
 
-   b) Per-repo post-commit hooks (durable, runs on every commit):
-        for r in ${REPOS[*]}; do
-          (cd $SOURCE_PARENT/\$r && graphify hook install)
-        done
-      (Then verify the hook plays well with the merged-corpus layout — see
-       gru/knowledge/narrative/README.md for the open question.)
+   b) Outside an active session, leave the graph quiescent. Before invoking a
+      gru skill that needs a fresh graph, run a one-shot ad-hoc update:
+        cd $PARENT && graphify update .
 
-5. Document the chosen maintenance ritual in:
-     gru/knowledge/narrative/README.md
+   Per-repo "graphify hook install" was rejected: it rebuilds the per-repo
+   graph (~/IdeaProjects/<repo>/graphify-out/), not the merged corpus the
+   gru MCP queries. See gru/knowledge/narrative/README.md ("Why not per-repo
+   hooks") for the source-level reasoning and the uninstall recipe.
 
 NEXT
