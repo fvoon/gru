@@ -1,0 +1,27 @@
+{
+  "key": "PLTPM-21503",
+  "fields": {
+    "summary": "[BE] Wallet-to-wallet transfer event publisher",
+    "description": "## What to build\n\nPublish wallet-to-wallet transfer events from payment-platform whenever a successful transfer is committed.\n\n## Acceptance criteria\n\n- [ ] Event is published on every successful transfer.\n- [ ] Event payload includes sender, recipient, amount, currency, and transfer id.\n- [ ] Unit tests cover the publisher.\n\n## Out of scope\n\n- Failed-transfer events (separate ticket).\n",
+    "issuetype": {"name": "Technical Story", "id": "10001"},
+    "status": {"name": "next", "id": "14423"},
+    "components": [
+      {"name": "payment-platform"}
+    ],
+    "labels": [],
+    "issuelinks": [
+      {
+        "type": {
+          "name": "Implement",
+          "outward": "implements",
+          "inward": "is implemented by"
+        },
+        "outwardIssue": {
+          "key": "PLTPM-21000",
+          "fields": {"summary": "Wallet-to-wallet transfer events PRD"}
+        }
+      }
+    ],
+    "comment": {"comments": []}
+  }
+}

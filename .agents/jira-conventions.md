@@ -2,7 +2,7 @@
 
 > Source of truth for Jira- and Confluence-side conventions. gru skills MUST read values from this file at runtime — never hardcode them. Update this file when conventions change; bump the schema version below if a change is breaking.
 >
-> **Schema version**: 2
+> **Schema version**: 3
 > **Last verified against PLTPM**: 2026-05-02
 
 ## Site
@@ -207,6 +207,23 @@ inwardIssue  = <blocker-key>
 outwardIssue = <blocked-key>
 type         = "Blocks"
 ```
+
+## Labels
+
+gru-relevant labels (verified live):
+
+| Label      | Owner                | Meaning                                                                                       |
+|------------|----------------------|-----------------------------------------------------------------------------------------------|
+| `ai-ready` | `ai-ready-check` skill | Child ticket has passed all `ai-ready-check` checklist items. Required by the minion-pickup JQL. |
+
+**Lifecycle**: humans add `ai-ready` to a child ticket when they want it gated; `ai-ready-check` validates the checklist and either keeps the label (on pass) or removes it (on fail) while posting a structured comment.
+
+**Per-skill rules**:
+- `ai-ready-check` only adds/removes `ai-ready`. It never touches other labels.
+- `prd-to-jira-issues` and `write-a-prd` do not set any labels.
+- `spike-and-report` does not set any labels.
+
+Other labels in PLTPM (e.g., team labels, release labels) are owned by humans / existing automation and gru never reads or writes them.
 
 ## Ceremony Sub-tasks
 

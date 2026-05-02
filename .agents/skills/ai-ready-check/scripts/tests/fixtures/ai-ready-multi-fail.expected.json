@@ -1,0 +1,31 @@
+{
+  "status": "not_ai_ready",
+  "ticket_key": "PLTPM-21504",
+  "checks": {
+    "ac_present": false,
+    "blockers_done": true,
+    "components_canonical": false,
+    "implement_link": false,
+    "status_next": false,
+    "issue_type_allowed": true
+  },
+  "outcome_changed": true,
+  "label_currently_set": false,
+  "actions": [
+    {
+      "step": 1,
+      "tool": "atlassian.addCommentToJiraIssue",
+      "args": {
+        "issueKey": "PLTPM-21504",
+        "body": "<!-- ai-ready-check:v1 -->\n<!-- ai-ready-outcome: {\"ac_present\":false,\"blockers_done\":true,\"components_canonical\":false,\"implement_link\":false,\"status_next\":false,\"issue_type_allowed\":true} -->\n\n## ai-ready-check failed\n\n- **Acceptance criteria section missing or empty.** Add a `## Acceptance criteria` section to the ticket description with at least one checklist item.\n- **Multiple Components set (`wrong-component`, `another-wrong`).** gru-managed tickets carry exactly one Component, and it must be one of: `payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`.\n- **No Implement link to a parent.** Add an `Implement` link outward from this ticket to its parent Story / Technical Story.\n- **Status is `To Do`, expected `next`.** An engineer must transition this ticket `To Do → next` (transition id `221`) before it can be ai-ready.\n\nRe-run after addressing the items above. The `ai-ready` label has been removed (if it was set)."
+      },
+      "purpose": "Post the ai-ready-check outcome with embedded marker so future re-runs can short-circuit on no_change."
+    }
+  ],
+  "failed_items": [
+    "ac_present",
+    "components_canonical",
+    "implement_link",
+    "status_next"
+  ]
+}

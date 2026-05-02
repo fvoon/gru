@@ -1,0 +1,16 @@
+{
+  "key": "PLTPM-21504",
+  "fields": {
+    "summary": "[BE] Wallet PIN reset endpoint",
+    "description": "## What to build\n\nAdd a POST /v1/wallets/{id}/pin/reset endpoint to walletapi.\n\n(no acceptance criteria section yet)\n",
+    "issuetype": {"name": "Technical Story", "id": "10001"},
+    "status": {"name": "To Do", "id": "12612"},
+    "components": [
+      {"name": "wrong-component"},
+      {"name": "another-wrong"}
+    ],
+    "labels": [],
+    "issuelinks": [],
+    "comment": {"comments": []}
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "key": "PLTPM-21503",
+  "fields": {
+    "summary": "[BE] Wallet-to-wallet transfer event publisher",
+    "description": "## What to build\n\nPublish wallet-to-wallet transfer events from payment-platform whenever a successful transfer is committed.\n\n## Acceptance criteria\n\n- [ ] Event is published on every successful transfer.\n- [ ] Event payload includes sender, recipient, amount, currency, and transfer id.\n- [ ] Unit tests cover the publisher.\n",
+    "issuetype": {"name": "Technical Story", "id": "10001"},
+    "status": {"name": "next", "id": "14423"},
+    "components": [
+      {"name": "payment-platform"}
+    ],
+    "labels": ["ai-ready"],
+    "issuelinks": [
+      {
+        "type": {
+          "name": "Implement",
+          "outward": "implements",
+          "inward": "is implemented by"
+        },
+        "outwardIssue": {
+          "key": "PLTPM-21000",
+          "fields": {"summary": "Wallet-to-wallet transfer events PRD"}
+        }
+      }
+    ],
+    "comment": {
+      "comments": [
+        {
+          "id": "1100",
+          "body": "<!-- ai-ready-check:v1 -->\n<!-- ai-ready-outcome: {\"ac_present\":true,\"blockers_done\":true,\"components_canonical\":true,\"implement_link\":true,\"status_next\":true,\"issue_type_allowed\":true} -->\n\n## ai-ready-check passed\n\nAll 6 checks pass. The `ai-ready` label has been applied; this ticket is eligible for the dispatcher's pickup JQL (`status = next AND labels = ai-ready`)."
+        }
+      ]
+    }
+  }
+}

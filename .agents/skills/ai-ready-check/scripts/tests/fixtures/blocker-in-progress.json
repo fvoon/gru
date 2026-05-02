@@ -1,0 +1,7 @@
+{
+  "key": "PLTPM-21001",
+  "fields": {
+    "summary": "Outbox publisher infrastructure",
+    "status": {"name": "In Progress", "id": "3"}
+  }
+}
