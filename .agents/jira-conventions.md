@@ -15,10 +15,15 @@
 
 Required by `write-a-prd` (elevated PRDs) and `spike-and-report` (research sub-pages). Skills read these values at runtime; if either is missing or set to `<TBA — bootstrap>`, the skill MUST refuse with a one-line bootstrap pointer ("fill in `## Confluence` in `.agents/jira-conventions.md`").
 
-- **Confluence space key**: `<TBA — bootstrap>`
-- **Confluence space ID**: `<TBA — bootstrap>`
-- **Spikes parent page ID** (where research sub-pages land when their Research ticket has no Confluence-elevated parent PRD): `<TBA — bootstrap>`
-- **Spikes parent page title**: `Spikes` (display only — discovery is by id)
+- **Confluence space key**: `PS1`
+- **Confluence space ID**: `5015143175`
+- **Spikes parent page ID** (where research sub-pages land when their Research ticket has no Confluence-elevated parent PRD): `6711345211`
+- **Spikes parent page title**: `15 - Spikes`
+
+Notes (informational only; skills don't parse these):
+
+- The Payments space's URL alias is `payments`, so its homepage is at <https://moneylion.atlassian.net/wiki/spaces/payments/>. Discovery via `atlassian.getConfluenceSpaces` returns `key: "PS1"` plus `currentActiveAlias: "payments"`.
+- `15 - Spikes` is a `folder` content type (not a page), sibling of the other `NN - Section` folders directly under the Payments space homepage (id `5015143454`). `createConfluencePage` accepts a folder id as `parentId`, so spike sub-pages land underneath cleanly.
 
 ### Sub-page parent resolution (used by `spike-and-report`)
 
