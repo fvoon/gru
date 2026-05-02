@@ -66,10 +66,12 @@ gru does not store code. It reads cross-app cohesion via [graphify](https://gith
 git clone https://github.com/fvoon/gru.git
 cd gru
 
-# bootstrap graphify (one-time)
-mkdir -p ~/payments-graph && cd ~/payments-graph
-# clone or symlink the four product repos as siblings here
-graphify --watch .   # leave this running in a background terminal
+# one-time bootstrap of ~/payments-graph/ + graphify install
+./scripts/setup-graphify.sh
+
+# follow the printed next-steps to run /graphify . in Claude Code,
+# then start a maintenance watcher in a background terminal:
+cd ~/payments-graph && graphify --watch .
 
 # back in the gru workspace, in Cursor IDE chat:
 # "Use the write-a-prd skill, I want to add <feature>."

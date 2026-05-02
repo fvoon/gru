@@ -36,11 +36,35 @@ This layer drifts faster than code. Refresh cadence:
 
 A skill or PR that surfaces narrative drift should open a `gru` issue rather than silently fix it — drift detection is a feature.
 
-## Graphify maintenance ritual
+## Graphify install + maintenance ritual
 
-The merged corpus at `~/payments-graph/` must stay current for the cohesion KB to be useful. Choose one:
+### Install (one-time)
 
-- **`graphify --watch ~/payments-graph/`** in a background terminal during active gru work (simple, ephemeral).
-- **Per-repo post-commit hooks** (`graphify hook install` per product repo) so any commit anywhere triggers a rebuild (durable, but verify it cooperates with the merged-corpus layout).
+Use the bootstrap script:
 
-Document the chosen approach here once decided (`graphify-maintenance` todo in `docs/plan.md`).
+```bash
+./scripts/setup-graphify.sh
+```
+
+It creates `~/payments-graph/`, symlinks the 4 product repos as siblings, and installs graphify (`pip install graphifyy && graphify install`). See [`../../scripts/README.md`](../../scripts/README.md).
+
+After bootstrap, in Claude Code from `~/payments-graph/`:
+
+```
+/graphify . --wiki --mcp
+```
+
+`--wiki` builds agent-crawlable articles under `graphify-out/wiki/`. `--mcp` starts the MCP stdio server that gru skills query directly.
+
+### Maintenance ritual
+
+The merged corpus must stay current for the cohesion KB to be useful. Pick one (and document the choice below):
+
+| Option | Trade-off | When to choose |
+|---|---|---|
+| **`graphify --watch ~/payments-graph/`** in a background terminal | Simple, ephemeral, instant rebuild on file save (AST only). Doc/image changes notify but don't auto-LLM-rebuild — run `--update` for those. | During active gru sessions where multiple agents are writing in parallel. |
+| **Per-repo post-commit hooks** (`graphify hook install` in each product repo) | Durable, runs once per commit, no background process. Open question: does it cooperate with the merged-corpus layout? | When gru is used intermittently and a stale graph would be a footgun. |
+
+**Open question (from [`../../docs/plan.md`](../../docs/plan.md))**: per-repo `graphify hook install` was designed for single-corpus layouts. Verify it correctly drives the merged-corpus rebuild before defaulting to it. If verification fails, default to `--watch`.
+
+**Chosen approach for our team**: TBA — fill in once decided.
