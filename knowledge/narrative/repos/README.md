@@ -4,10 +4,14 @@ One short README-style file per product repo in scope. Captures what graphify sy
 
 ## Scope
 
-- `payment-platform.md`
-- `walletapi.md`
-- `infrastructure.md`
-- `spring-boot-starters.md`
+- `payment-platform.md` — DRAFT, pending PM/eng review
+- `walletapi.md` — DRAFT, pending PM/eng review
+- `infrastructure.md` — DRAFT, pending PM/eng review
+- `spring-boot-starters.md` — DRAFT, pending PM/eng review
+
+Each draft has `<!-- TODO -->` markers where the assumption was made from
+second-hand code reading and needs human confirmation. Owners + on-call
+rotations are the most common gap.
 
 ## Format per file
 

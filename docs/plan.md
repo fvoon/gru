@@ -181,7 +181,7 @@ flowchart LR
 4. **Jira bootstrap** — ✅ workflow statuses discovered (`To Do → next → In Progress → ...`); ✅ `Implement` link type confirmed; ⚠️ 4 repo-shaped Components need to be created via Jira admin (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`).
 5. **Narrative — flows** — ⚠️ DRAFTED, pending PM/eng review: `wallet-topup`, `transfer-authorization`, `ach-return` (each carries `<!-- TODO -->` markers for second-hand assumptions). Pick remaining 0-2 with PMs after review.
 6. **Narrative — glossary** — cross-app semantic mismatches, seeded from graphify god nodes.
-7. **Narrative — repos** — short README-style overview per product repo.
+7. **Narrative — repos** — ⚠️ DRAFTED, pending PM/eng review: `payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters` (each carries `<!-- TODO -->` markers — owners + on-call are the most common gap).
 8. **Conventions** — `.agents/jira-conventions.md` (status names, Component mapping, parent/child heuristics, link types, ceremony sub-tasks).
 9. **Skill: `write-a-prd`** — graphify-aware PRD interview, writes Story/Technical Story directly in Jira.
 10. **Skill: `prd-to-jira-issues`** — graphify-grounded slicing, per-repo child Tasks linked via `implements`, ceremony Sub-tasks, `is blocked by` chain, Research siblings.
