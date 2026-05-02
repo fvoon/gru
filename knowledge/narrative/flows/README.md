@@ -35,10 +35,13 @@ sequenceDiagram
 - <gotcha 2>
 ```
 
-## Initial set (TBA)
+## Initial set
 
-- `wallet-topup.md`
-- `transfer-authorization.md`
-- `ach-return.md`
+- `wallet-topup.md` — DRAFT, pending PM/eng review
+- `transfer-authorization.md` — DRAFT, pending PM/eng review
+- `ach-return.md` — DRAFT, pending PM/eng review
 
-(Pick the rest with PMs after the first three are drafted.)
+Each draft has `<!-- TODO -->` markers where the assumption was made from second-hand
+code reading and needs human confirmation.
+
+(Pick the rest with PMs after the first three are reviewed.)

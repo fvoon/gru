@@ -97,6 +97,8 @@ flowchart TD
     class C3 research
 ```
 
+
+
 Cross-child ordering between siblings uses `is blocked by` (e.g., publisher Task blocks consumer Task). `Epic` is reserved for loftier multi-feature initiatives and is **not** used by the typical AI workflow.
 
 ### Parent type selection heuristic
@@ -113,8 +115,8 @@ Cross-child ordering between siblings uses `is blocked by` (e.g., publisher Task
 
 - Slice involves QA verification → `Technical Story`
 - Slice is engineering-only (refactor, infra, config, no user-visible behavior change) → `Task`
-- Slice is exploratory / open-ended → `Research ` (trailing space — see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md))
-- Slice is a focused design artifact → `Design ` (trailing space — same)
+- Slice is exploratory / open-ended → `Research`  (trailing space — see `[.agents/jira-conventions.md](../.agents/jira-conventions.md)`)
+- Slice is a focused design artifact → `Design`  (trailing space — same)
 
 ## Workflow at a glance
 
@@ -163,9 +165,9 @@ flowchart LR
 - **Narrative layer**: `gru/knowledge/narrative/` — `flows/`, `glossary.md`, `repos/`. Defer `events-overrides.md` and `pitfalls.md` until graphify gaps justify them.
 - **Jira project**: `PLTPM` (Payments).
 - **Parent**: `Story` (user-facing) or `Technical Story` (engineering). PRD content lives in parent description (Markdown, AI-optimized). Confluence elevation is opt-in for "significant" PRDs only.
-- **Children**: per-repo `Task` / `Technical Story` / `Research ` / `Design ` (Research and Design have a trailing space in their PLTPM type names — see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md)), linked to parent via `Implement` link type (outward `implements`, inward `is implemented by`). Cross-child ordering via `Blocks` (`is blocked by`).
+- **Children**: per-repo `Task` / `Technical Story` / `Research`  / `Design`  (Research and Design have a trailing space in their PLTPM type names — see `[.agents/jira-conventions.md](../.agents/jira-conventions.md)`), linked to parent via `Implement` link type (outward `implements`, inward `is implemented by`). Cross-child ordering via `Blocks` (`is blocked by`).
 - **Repo identification**: Jira `Component` per child. Exactly **one** Component per gru-managed ticket, and it is one of the 4 repo-shaped values (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`) — gru never sets PLTPM's existing domain-shaped Components (`Payment Processor(s)`, `Wallet (Transfers)`, etc.). The two axes (repo vs. domain) are orthogonal; gru lives entirely on the repo axis. Bootstrap todo: create the 4 repo-shaped Components in PLTPM.
-- **Ceremony**: every `Task` and `Technical Story` child auto-receives 5 standard Sub-tasks (Development, Code Review 1, Code Review 2, Test case creation, Test case execution). `Research ` and `Design ` children skip the ceremony.
+- **Ceremony**: every `Task` and `Technical Story` child auto-receives 5 standard Sub-tasks (Development, Code Review 1, Code Review 2, Test case creation, Test case execution). `Research`  and `Design`  children skip the ceremony.
 - **Gates** (collapsed onto PLTPM's actual workflow `To Do → next → In Progress → ...` since PLTPM has no dedicated "Ready for Eng Review" / "Ready for Development" statuses): `eng-reviewed` = engineer transitions ticket from `To Do → next` (transition id `221`, "To Do to Next"). `ai-ready` = `ai-ready-check` skill applies the `ai-ready` label while ticket remains in `next` (no further transition). Minion-pickup JQL keys on `(status = next AND labels = ai-ready)`.
 - **Spike output**: Confluence research sub-page linked from the `Research` ticket; comment on the ticket with the link.
 - **Jira / Confluence surface**: Atlassian MCP (`plugin-atlassian-atlassian`).
@@ -177,7 +179,7 @@ flowchart LR
 2. **Graphify bootstrap** — stand up `~/payments-graph/` with the 4 product repos as siblings; install graphify; run `/graphify .`; review GRAPH_REPORT.md.
 3. **Graphify maintenance ritual** — `--watch` or per-repo post-commit hooks; document in `knowledge/narrative/README.md`.
 4. **Jira bootstrap** — ✅ workflow statuses discovered (`To Do → next → In Progress → ...`); ✅ `Implement` link type confirmed; ⚠️ 4 repo-shaped Components need to be created via Jira admin (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`).
-5. **Narrative — flows** — 3-5 mermaid sequence diagrams (`wallet-topup`, `transfer-authorization`, `ach-return`, ...).
+5. **Narrative — flows** — ⚠️ DRAFTED, pending PM/eng review: `wallet-topup`, `transfer-authorization`, `ach-return` (each carries `<!-- TODO -->` markers for second-hand assumptions). Pick remaining 0-2 with PMs after review.
 6. **Narrative — glossary** — cross-app semantic mismatches, seeded from graphify god nodes.
 7. **Narrative — repos** — short README-style overview per product repo.
 8. **Conventions** — `.agents/jira-conventions.md` (status names, Component mapping, parent/child heuristics, link types, ceremony sub-tasks).
@@ -270,7 +272,7 @@ Adapts AI Hero `prd-to-issues`. Key differences:
 - **Slice boundaries grounded in graphify**: queries the MCP server for module ownership of each touched concept. Surfaces dependency edges to inform the `is blocked by` chain.
 - **For features touching >1 repo**: optionally creates a contract Confluence sub-page (only if cross-app contract is non-trivial; otherwise the contract goes inline into each child description).
 - **Per-repo child creation**: `createJiraIssue` per slice with:
-  - Issue type per child heuristic (`Task` / `Technical Story` / `Research ` / `Design ` — note trailing space on the latter two).
+  - Issue type per child heuristic (`Task` / `Technical Story` / `Research`  / `Design`  — note trailing space on the latter two).
   - **Exactly one** `Component`, set to the in-scope repo name (`payment-platform`, `walletapi`, `infrastructure`, or `spring-boot-starters`). Never a domain-shaped Component.
   - Description = self-contained, AI-copyable prompt (see structure below).
   - Link to parent via `createIssueLink` type `Implement` (`inwardIssue` = parent, `outwardIssue` = child). Reads as "child implements parent".
@@ -342,8 +344,8 @@ Checklist (all must pass):
 - All `is blocked by` tickets are in `Done` state.
 - Exactly one Component is set, and it is one of the 4 repo-shaped values (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`). gru-managed tickets do not carry domain-shaped Components.
 - Ticket is linked to a parent via the `Implement` link type (outward `implements` from child to parent).
-- Status is `next` (which means the engineer has already eng-reviewed it; see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md) for the gate mapping).
-- Issue type is `Task` or `Technical Story` (`Research ` and `Design ` children are never `ai-ready`).
+- Status is `next` (which means the engineer has already eng-reviewed it; see `[.agents/jira-conventions.md](../.agents/jira-conventions.md)` for the gate mapping).
+- Issue type is `Task` or `Technical Story` (`Research`  and `Design`  children are never `ai-ready`).
 
 Behavior:
 
@@ -385,10 +387,10 @@ A 25-minute live walkthrough using a real cross-repo feature (suggested: "expose
 
 ## Open setup details to resolve during bootstrap
 
-- ✅ **PLTPM workflow status names**: discovered. Workflow is `To Do → next → In Progress → ...`. Gates collapsed onto `next` (status) + `ai-ready` (label). See [`.agents/jira-conventions.md`](../.agents/jira-conventions.md).
-- ⚠️ **Jira Components for the 4 product repos**: do NOT exist in PLTPM. PLTPM uses domain-shaped Components only. **Action**: create 4 repo-shaped Components (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`) via Jira admin at <https://moneylion.atlassian.net/jira/software/c/projects/PLTPM/components>. They will coexist with existing domain Components.
-- ✅ **`Implement` link type**: enabled in PLTPM (id `19455`, outward `implements`, inward `is implemented by`). Note: there is also `Polaris work item link` with the same semantics — gru must use `Implement`, never Polaris.
-- ⚠️ **Issue type names with trailing whitespace**: `Research ` (id `10720`), `Design ` (id `10747`), `Analytics ` (id `10753`) all have a trailing space in their PLTPM type names. Skills must use the exact strings (with trailing space) when creating these issues via API.
+- ✅ **PLTPM workflow status names**: discovered. Workflow is `To Do → next → In Progress → ...`. Gates collapsed onto `next` (status) + `ai-ready` (label). See `[.agents/jira-conventions.md](../.agents/jira-conventions.md)`.
+- ⚠️ **Jira Components for the 4 product repos**: do NOT exist in PLTPM. PLTPM uses domain-shaped Components only. **Action**: create 4 repo-shaped Components (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`) via Jira admin at [https://moneylion.atlassian.net/jira/software/c/projects/PLTPM/components](https://moneylion.atlassian.net/jira/software/c/projects/PLTPM/components). They will coexist with existing domain Components.
+- ✅ `**Implement` link type**: enabled in PLTPM (id `19455`, outward `implements`, inward `is implemented by`). Note: there is also `Polaris work item link` with the same semantics — gru must use `Implement`, never Polaris.
+- ⚠️ **Issue type names with trailing whitespace**: `Research`  (id `10720`), `Design`  (id `10747`), `Analytics`  (id `10753`) all have a trailing space in their PLTPM type names. Skills must use the exact strings (with trailing space) when creating these issues via API.
 - **Per-repo git hook vs. `--watch` daemon for graphify**: confirm whether `graphify hook install` per repo correctly drives the merged-corpus rebuild. If not, default to `--watch`.
 - **Initial graphify bootstrap cost**: measure the first `/graphify .` run; narrow the corpus or use `--update` on a subset if cost is unexpectedly high.
 - **Naming collisions across product repos**: review `GRAPH_REPORT.md` for false-positive cross-edges.
