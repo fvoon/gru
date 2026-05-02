@@ -183,7 +183,7 @@ flowchart LR
 6. **Narrative — glossary** — cross-app semantic mismatches, seeded from graphify god nodes.
 7. **Narrative — repos** — ⚠️ DRAFTED, pending PM/eng review: `payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters` (each carries `<!-- TODO -->` markers — owners + on-call are the most common gap).
 8. **Conventions** — `.agents/jira-conventions.md` (status names, Component mapping, parent/child heuristics, link types, ceremony sub-tasks).
-9. **Skill: `write-a-prd`** — graphify-aware PRD interview, writes Story/Technical Story directly in Jira.
+9. **Skill: `write-a-prd`** — ✅ scaffolded, pending end-to-end demo: `.agents/skills/write-a-prd/` with `SKILL.md` (54 lines), `REFERENCE.md`, `EXAMPLES.md`, three deterministic Python scripts (`validate_components.py`, `significance_check.py`, `write_jira_prd.py`), 97 unit tests + 2 golden plans against reference drafts. Real PLTPM end-to-end is gated on the `demo` todo.
 10. **Skill: `prd-to-jira-issues`** — graphify-grounded slicing, per-repo child Tasks linked via `implements`, ceremony Sub-tasks, `is blocked by` chain, Research siblings.
 11. **Skill: `spike-and-report`** — operates on Research issue type, throwaway worktree, no PR, Confluence research sub-page.
 12. **Skill: `ai-ready-check`** — checklist enforcement, label + status transition on pass.

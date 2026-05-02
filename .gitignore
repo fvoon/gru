@@ -41,3 +41,12 @@ graphify-out/
 scratch/
 .tmp/
 tmp/
+
+# write-a-prd / future-skill drafts (per-skill, gitignored, .gitkeep preserved)
+.agents/skills/*/drafts/*
+!.agents/skills/*/drafts/.gitkeep
+
+# python build / install artifacts inside skill scripts
+.agents/skills/*/scripts/*.egg-info/
+.agents/skills/*/scripts/.pytest_cache/
+.agents/skills/*/scripts/.ruff_cache/

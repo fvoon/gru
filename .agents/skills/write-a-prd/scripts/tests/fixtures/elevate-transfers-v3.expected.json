@@ -1,0 +1,49 @@
+{
+  "mode": "elevate",
+  "summary": "Transfers V3 internal saga overhaul for ACH return reliability",
+  "summary_exceeds_soft_limit": false,
+  "issue_type": "Technical Story",
+  "primary_component": "payment-platform",
+  "candidate_components": [
+    "payment-platform"
+  ],
+  "requires_user_choice": null,
+  "actions": [
+    {
+      "step": 1,
+      "tool": "atlassian.createConfluencePage",
+      "args": {
+        "spaceKey": "PS",
+        "title": "PRD: Transfers V3 internal saga overhaul for ACH return reliability",
+        "body": "## Problem Statement\nThe current TransferSaga implementation in payment-platform handles ACH returns through a brittle chain of event handlers. When Payliance pushes a return entry mid-saga, the saga occasionally double-reverses the wallet ledger, producing duplicate debit events that operations has to manually unwind.\n\n## Solution\nRefactor the saga's return-handling path to be idempotent on the (transferId, returnReasonCode) tuple. Introduce an explicit `ReturnReceived` aggregate event so reverse paths converge on a single state machine, and add an idempotency guard at the SQS consumer boundary.\n\n## User Stories\n1. As payment-platform, I want to deduplicate inbound ACH returns by (transferId, returnReasonCode), so that the saga reverses the ledger exactly once.\n2. As the TransferSaga, I want to emit `ReturnReceived` as a first-class event, so that downstream listeners can subscribe to a single, named transition rather than inferring state from chained handlers.\n3. As the SQS consumer, I want to reject already-processed return entries at the queue boundary, so that retries from Payliance never re-enter the saga.\n\n## Cross-Application Impact\n- payment-platform: refactor TransferSaga return-handler chain into an explicit ReturnReceived aggregate event, add idempotency guard at the SQS consumer, instrument duplicate-detection metrics, backfill saga state for in-flight transfers at deploy time.\n\n## Implementation Decisions\n- New aggregate event `ReturnReceived(transferId, returnReasonCode, providerReference)` published from the SQS consumer, consumed by TransferSaga.\n- Idempotency table keyed on `(transferId, returnReasonCode)` with a unique index; duplicates are ack'd-and-dropped at the consumer.\n- Backfill job replays the in-flight saga state machine for any transfer whose return arrived during the deploy window; runs once at startup behind a feature flag.\n- Metrics: `saga.return.deduped` counter and `saga.return.received` counter, both tagged by reasonCode. No new dashboards in this PRD.\n\n## Out of Scope\n- walletapi changes — wallet ledger correctness is downstream of saga correctness; this PRD only changes the saga.\n- Payliance contract changes — we treat their feed as the source of truth; any contract negotiation is a separate workstream.\n- Replacing the existing SQS topology with EventBridge — debated but deferred; the saga refactor is independently valuable.\n- Manually unwinding historical duplicate debits — operations team owns that cleanup, tracked separately.\n\n## Further Notes\nBackfill rollout will be staged behind the existing `transfer-saga-v3` Split.io flag. Coordinate the cutover with the on-call rota.\n\n## References\n- graphify wiki: TransferSaga, payment-platform-task-worker\n- Narrative flows: knowledge/narrative/flows/ach-return.md\n- Related ADRs: (none)\n"
+      },
+      "captures": "confluence_page_url"
+    },
+    {
+      "step": 2,
+      "tool": "atlassian.createJiraIssue",
+      "args": {
+        "projectKey": "PLTPM",
+        "issueType": "Technical Story",
+        "components": [
+          "payment-platform"
+        ],
+        "summary": "Transfers V3 internal saga overhaul for ACH return reliability",
+        "description": "**This is a significant PRD; the full text lives in Confluence.**\n\n**Confluence**: <CONFLUENCE_PAGE_URL>\n\n## Problem Statement\nThe current TransferSaga implementation in payment-platform handles ACH returns through a brittle chain of event handlers. When Payliance pushes a return entry mid-saga, the saga occasionally double-reverses the wallet ledger, producing duplicate debit events that operations has to manually unwind.\n\n## Out of Scope\n- walletapi changes — wallet ledger correctness is downstream of saga correctness; this PRD only changes the saga.\n- Payliance contract changes — we treat their feed as the source of truth; any contract negotiation is a separate workstream.\n- Replacing the existing SQS topology with EventBridge — debated but deferred; the saga refactor is independently valuable.\n- Manually unwinding historical duplicate debits — operations team owns that cleanup, tracked separately.\n\n## Cross-Application Impact\n- payment-platform\n\n---\nSee Confluence for full user stories, implementation decisions, references, and any embedded diagrams.\n"
+      },
+      "captures": "parent_issue_key",
+      "substitutions": {
+        "<CONFLUENCE_PAGE_URL>": "{{confluence_page_url}}"
+      }
+    },
+    {
+      "step": 3,
+      "tool": "atlassian.addConfluenceRemoteLinkToJiraIssue",
+      "args": {
+        "issueKey": "{{parent_issue_key}}",
+        "url": "{{confluence_page_url}}",
+        "title": "PRD: Transfers V3 internal saga overhaul for ACH return reliability"
+      }
+    }
+  ]
+}
