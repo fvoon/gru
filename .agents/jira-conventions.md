@@ -24,7 +24,7 @@ The following 4 Components MUST exist in PLTPM. gru skills validate presence at 
 - `infrastructure`
 - `spring-boot-starters`
 
-**Coexistence note**: PLTPM already uses domain-shaped Components (`Payment Processor(s)`, `Wallet (Payment Methods)`, `Wallet (Transfers)`, etc.). The 4 new repo-shaped Components serve a different axis (which codebase the work touches). A single ticket may carry both — e.g., a wallet-transfers fix in walletapi gets `walletapi` AND `Wallet (Transfers)`. gru only sets the repo Component; humans / existing automation set domain Components as before.
+**Components policy (gru-managed tickets)**: gru tickets carry **exactly one Component**, and it is one of the four repo-shaped values above. gru never sets domain-shaped Components (`Payment Processor(s)`, `Wallet (Payment Methods)`, `Wallet (Transfers)`, etc.); those are owned by humans / existing automation on non-gru tickets. If a human later adds a domain Component to a gru-managed ticket, that's their call — but `prd-to-jira-issues` and `ai-ready-check` only ever read/write the repo Component. The two axes (repo vs. domain) are intentionally orthogonal; gru lives entirely on the repo axis.
 
 ### Workflow / link-type sanity check
 
@@ -70,14 +70,38 @@ Avoid for gru-driven flow:
 
 Discovered PLTPM workflow:
 
-```
-                                                     ┌──────────────┐
-                                                     │  Cancelled   │
-                                                     └──────────────┘
-                                                          ▲
-                                                          │
-To Do ──→ next ──→ In Progress ──→ In Review ──→ Ready for Test ──→ Ready for deployment ──→ Done
-                                       └──→ CODE REVIEW (legacy alias of In Review)
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> ToDo
+    ToDo: To Do
+    Next: next
+    InProgress: In Progress
+    InReview: In Review
+    CodeReview: CODE REVIEW<br/>(legacy alias)
+    ReadyForTest: Ready for Test
+    ReadyForDeployment: Ready for deployment
+    Done: Done
+    Cancelled: Cancelled
+
+    ToDo --> Next: To Do to Next (id 221)
+    ToDo --> Cancelled: Cancel (id 141)
+    Next --> InProgress
+    InProgress --> InReview
+    InProgress --> CodeReview
+    InReview --> ReadyForTest
+    CodeReview --> ReadyForTest
+    ReadyForTest --> ReadyForDeployment
+    ReadyForDeployment --> Done
+    Done --> [*]
+    Cancelled --> [*]
+
+    note right of Next
+        gru gate target:
+        eng-reviewed = transition here
+        ai-ready = label applied
+        while in this state
+    end note
 ```
 
 ### gru gate mapping

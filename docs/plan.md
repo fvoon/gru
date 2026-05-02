@@ -62,19 +62,39 @@ gru/
 
 ## Jira hierarchy used by the AI workflow
 
-```
-Parent: Story OR Technical Story  (PRD content in description, AI-optimized)
-  ├── child Task or Technical Story  [Component = payment-platform]   linked via "implements"
-  │     ├── Sub-task: Development
-  │     ├── Sub-task: Code Review 1
-  │     ├── Sub-task: Code Review 2
-  │     ├── Sub-task: Test case creation
-  │     └── Sub-task: Test case execution
-  ├── child Task  [Component = walletapi]                              linked via "implements"
-  │     └── (same 5 ceremony sub-tasks)
-  ├── (optional) Research                                              linked via "implements"
-  │     └── output is a Confluence research sub-page
-  └── ...
+```mermaid
+flowchart TD
+    PARENT["<b>Parent</b><br/>Story OR Technical Story<br/>(PRD content in description, AI-optimized)"]
+
+    C1["<b>child Task / Technical Story</b><br/>Component = payment-platform"]
+    C1S1[Sub-task: Development]
+    C1S2[Sub-task: Code Review 1]
+    C1S3[Sub-task: Code Review 2]
+    C1S4[Sub-task: Test case creation]
+    C1S5[Sub-task: Test case execution]
+
+    C2["<b>child Task / Technical Story</b><br/>Component = walletapi<br/>(same 5 ceremony Sub-tasks)"]
+
+    C3["<b>(optional) Research</b><br/>output is a<br/>Confluence research sub-page"]
+
+    PARENT -- implements --> C1
+    PARENT -- implements --> C2
+    PARENT -- implements --> C3
+
+    C1 --> C1S1
+    C1 --> C1S2
+    C1 --> C1S3
+    C1 --> C1S4
+    C1 --> C1S5
+
+    classDef parent fill:#fff8e1,stroke:#f57f17,color:#bf360c,font-weight:bold
+    classDef child fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef subtask fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef research fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class PARENT parent
+    class C1,C2 child
+    class C1S1,C1S2,C1S3,C1S4,C1S5 subtask
+    class C3 research
 ```
 
 Cross-child ordering between siblings uses `is blocked by` (e.g., publisher Task blocks consumer Task). `Epic` is reserved for loftier multi-feature initiatives and is **not** used by the typical AI workflow.
@@ -144,7 +164,7 @@ flowchart LR
 - **Jira project**: `PLTPM` (Payments).
 - **Parent**: `Story` (user-facing) or `Technical Story` (engineering). PRD content lives in parent description (Markdown, AI-optimized). Confluence elevation is opt-in for "significant" PRDs only.
 - **Children**: per-repo `Task` / `Technical Story` / `Research ` / `Design ` (Research and Design have a trailing space in their PLTPM type names — see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md)), linked to parent via `Implement` link type (outward `implements`, inward `is implemented by`). Cross-child ordering via `Blocks` (`is blocked by`).
-- **Repo identification**: Jira `Component` per child. Bootstrap todo: create 4 repo-shaped Components in PLTPM (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`). These coexist with PLTPM's existing domain-shaped Components (`Payment Processor(s)`, `Wallet (Transfers)`, etc.); a child may carry both axes.
+- **Repo identification**: Jira `Component` per child. Exactly **one** Component per gru-managed ticket, and it is one of the 4 repo-shaped values (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`) — gru never sets PLTPM's existing domain-shaped Components (`Payment Processor(s)`, `Wallet (Transfers)`, etc.). The two axes (repo vs. domain) are orthogonal; gru lives entirely on the repo axis. Bootstrap todo: create the 4 repo-shaped Components in PLTPM.
 - **Ceremony**: every `Task` and `Technical Story` child auto-receives 5 standard Sub-tasks (Development, Code Review 1, Code Review 2, Test case creation, Test case execution). `Research ` and `Design ` children skip the ceremony.
 - **Gates** (collapsed onto PLTPM's actual workflow `To Do → next → In Progress → ...` since PLTPM has no dedicated "Ready for Eng Review" / "Ready for Development" statuses): `eng-reviewed` = engineer transitions ticket from `To Do → next` (transition id `221`, "To Do to Next"). `ai-ready` = `ai-ready-check` skill applies the `ai-ready` label while ticket remains in `next` (no further transition). Minion-pickup JQL keys on `(status = next AND labels = ai-ready)`.
 - **Spike output**: Confluence research sub-page linked from the `Research` ticket; comment on the ticket with the link.
@@ -251,7 +271,7 @@ Adapts AI Hero `prd-to-issues`. Key differences:
 - **For features touching >1 repo**: optionally creates a contract Confluence sub-page (only if cross-app contract is non-trivial; otherwise the contract goes inline into each child description).
 - **Per-repo child creation**: `createJiraIssue` per slice with:
   - Issue type per child heuristic (`Task` / `Technical Story` / `Research ` / `Design ` — note trailing space on the latter two).
-  - `Component` set to the in-scope repo name (`payment-platform`, `walletapi`, `infrastructure`, or `spring-boot-starters`).
+  - **Exactly one** `Component`, set to the in-scope repo name (`payment-platform`, `walletapi`, `infrastructure`, or `spring-boot-starters`). Never a domain-shaped Component.
   - Description = self-contained, AI-copyable prompt (see structure below).
   - Link to parent via `createIssueLink` type `Implement` (`inwardIssue` = parent, `outwardIssue` = child). Reads as "child implements parent".
   - Title prefix `[BE]` for backend slices, `Spike:` / `Research:` for research, `Design:` for design.
@@ -320,7 +340,7 @@ Checklist (all must pass):
 
 - Acceptance criteria are present, testable, and at least one explicit test name is suggested.
 - All `is blocked by` tickets are in `Done` state.
-- Exactly one repo-shaped `Component` is set and is in the in-scope list (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`). Domain-shaped Components (e.g., `Wallet (Transfers)`) are tolerated alongside but not required.
+- Exactly one Component is set, and it is one of the 4 repo-shaped values (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`). gru-managed tickets do not carry domain-shaped Components.
 - Ticket is linked to a parent via the `Implement` link type (outward `implements` from child to parent).
 - Status is `next` (which means the engineer has already eng-reviewed it; see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md) for the gate mapping).
 - Issue type is `Task` or `Technical Story` (`Research ` and `Design ` children are never `ai-ready`).

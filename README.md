@@ -1,4 +1,7 @@
-# gru
+<h1>
+  <img src="https://www.illumination.com/wp-content/uploads/2020/02/YoungGru.png" width="96" alt="gru" align="left" />
+  &nbsp;gru
+</h1>
 
 > *"My minions, assemble!"*
 
@@ -17,23 +20,33 @@ Stage 3 (the minions) is intentionally out of scope — see [`docs/plan.md`](doc
 
 ## What gru does
 
-```
-PM idea ──▶ write-a-prd ──▶ parent Story / Technical Story (PRD inline)
-                              │
-                              ▼
-                       prd-to-jira-issues ──▶ per-repo child tickets
-                                                  │   (linked via "implements")
-                                                  │   (5 ceremony Sub-tasks each)
-                                                  │
-                                                  ├─▶ Research tickets ──▶ spike-and-report
-                                                  │
-                                                  ▼
-                                           eng review (HITL)
-                                                  │
-                                                  ▼
-                                           ai-ready-check ──▶ ai-ready label
-                                                                + status transition
-                                                                = ready for minions
+```mermaid
+flowchart TD
+    IDEA([PM idea])
+    PRD[write-a-prd]
+    PARENT["Parent Story / Technical Story<br/>(PRD inline in description)"]
+    SPLIT[prd-to-jira-issues]
+    CHILDREN["Per-repo child tickets<br/>linked via Implement<br/>+ 5 ceremony Sub-tasks each"]
+    RESEARCH["Research tickets<br/>(spikes)"]
+    SPIKE[spike-and-report]
+    REPORT["Confluence research<br/>sub-page"]
+    ENGREVIEW{{"Eng review (HITL)<br/>To Do → next"}}
+    READYCHECK[ai-ready-check]
+    READY(["ai-ready label applied<br/>(status stays at next)<br/>= ready for minions"])
+
+    IDEA --> PRD --> PARENT --> SPLIT
+    SPLIT --> CHILDREN
+    SPLIT --> RESEARCH --> SPIKE --> REPORT
+    CHILDREN --> ENGREVIEW --> READYCHECK --> READY
+
+    classDef skill fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef ticket fill:#fff8e1,stroke:#f57f17,color:#bf360c
+    classDef gate fill:#fce4ec,stroke:#c2185b,color:#880e4f
+    classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class PRD,SPLIT,SPIKE,READYCHECK skill
+    class PARENT,CHILDREN,RESEARCH,REPORT ticket
+    class ENGREVIEW gate
+    class READY done
 ```
 
 Four skills do the work, all under [`.agents/skills/`](.agents/skills):
