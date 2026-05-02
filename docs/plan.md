@@ -93,8 +93,8 @@ Cross-child ordering between siblings uses `is blocked by` (e.g., publisher Task
 
 - Slice involves QA verification → `Technical Story`
 - Slice is engineering-only (refactor, infra, config, no user-visible behavior change) → `Task`
-- Slice is exploratory / open-ended → `Research`
-- Slice is a focused design artifact → `Design`
+- Slice is exploratory / open-ended → `Research ` (trailing space — see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md))
+- Slice is a focused design artifact → `Design ` (trailing space — same)
 
 ## Workflow at a glance
 
@@ -124,10 +124,10 @@ flowchart LR
 
     JIRA --> GA{"Gate A: PM reviews parent"}
     GA --> JIRA
-    JIRA --> GB{"Gate B: eng lead transitions<br/>to Ready for Eng Review"}
+    JIRA --> GB{"Gate B: eng lead transitions<br/>To Do -> next (= eng-reviewed)"}
     GB --> GC[Reviewer adds ai-ready label]
     GC --> SKILLS
-    SKILLS -->|ai-ready-check pass| READY["ai-ready label confirmed<br/>+ status -> Ready for Development"]
+    SKILLS -->|ai-ready-check pass| READY["ai-ready label confirmed<br/>(status stays at next)"]
     SKILLS -->|fail| BACK[Removes label + posts comment]
 ```
 
@@ -143,10 +143,10 @@ flowchart LR
 - **Narrative layer**: `gru/knowledge/narrative/` — `flows/`, `glossary.md`, `repos/`. Defer `events-overrides.md` and `pitfalls.md` until graphify gaps justify them.
 - **Jira project**: `PLTPM` (Payments).
 - **Parent**: `Story` (user-facing) or `Technical Story` (engineering). PRD content lives in parent description (Markdown, AI-optimized). Confluence elevation is opt-in for "significant" PRDs only.
-- **Children**: per-repo `Task` / `Technical Story` / `Research` / `Design`, linked to parent via `implements`. Cross-child ordering via `is blocked by`.
-- **Repo identification**: Jira `Component` per child. Bootstrap todo: ensure Components exist in PLTPM for the 4 in-scope repos.
-- **Ceremony**: every `Task` and `Technical Story` child auto-receives 5 standard Sub-tasks (Development, Code Review 1, Code Review 2, Test case creation, Test case execution).
-- **Gates**: `eng-reviewed` = Jira status transition (eng lead moves the child past `Ready for Eng Review` / equivalent). `ai-ready` = both label AND status (`ai-ready-check` skill applies the label and transitions to `Ready for Development` on pass).
+- **Children**: per-repo `Task` / `Technical Story` / `Research ` / `Design ` (Research and Design have a trailing space in their PLTPM type names — see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md)), linked to parent via `Implement` link type (outward `implements`, inward `is implemented by`). Cross-child ordering via `Blocks` (`is blocked by`).
+- **Repo identification**: Jira `Component` per child. Bootstrap todo: create 4 repo-shaped Components in PLTPM (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`). These coexist with PLTPM's existing domain-shaped Components (`Payment Processor(s)`, `Wallet (Transfers)`, etc.); a child may carry both axes.
+- **Ceremony**: every `Task` and `Technical Story` child auto-receives 5 standard Sub-tasks (Development, Code Review 1, Code Review 2, Test case creation, Test case execution). `Research ` and `Design ` children skip the ceremony.
+- **Gates** (collapsed onto PLTPM's actual workflow `To Do → next → In Progress → ...` since PLTPM has no dedicated "Ready for Eng Review" / "Ready for Development" statuses): `eng-reviewed` = engineer transitions ticket from `To Do → next` (transition id `221`, "To Do to Next"). `ai-ready` = `ai-ready-check` skill applies the `ai-ready` label while ticket remains in `next` (no further transition). Minion-pickup JQL keys on `(status = next AND labels = ai-ready)`.
 - **Spike output**: Confluence research sub-page linked from the `Research` ticket; comment on the ticket with the link.
 - **Jira / Confluence surface**: Atlassian MCP (`plugin-atlassian-atlassian`).
 - **Cross-repo handling**: 1 child ticket = 1 Component = 1 future PR. Cross-app features become per-repo sibling children of the same parent, with `is blocked by` chains representing producer/consumer ordering.
@@ -156,7 +156,7 @@ flowchart LR
 1. `**gru` repo scaffold** — directory layout, symlinks, README + AGENTS.md framing the metaphor, LICENSE, .gitignore, empty `scripts/` placeholder.
 2. **Graphify bootstrap** — stand up `~/payments-graph/` with the 4 product repos as siblings; install graphify; run `/graphify .`; review GRAPH_REPORT.md.
 3. **Graphify maintenance ritual** — `--watch` or per-repo post-commit hooks; document in `knowledge/narrative/README.md`.
-4. **Jira bootstrap** — discover PLTPM workflow status names; ensure Components exist for the 4 repos; confirm `implements` link type.
+4. **Jira bootstrap** — ✅ workflow statuses discovered (`To Do → next → In Progress → ...`); ✅ `Implement` link type confirmed; ⚠️ 4 repo-shaped Components need to be created via Jira admin (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`).
 5. **Narrative — flows** — 3-5 mermaid sequence diagrams (`wallet-topup`, `transfer-authorization`, `ach-return`, ...).
 6. **Narrative — glossary** — cross-app semantic mismatches, seeded from graphify god nodes.
 7. **Narrative — repos** — short README-style overview per product repo.
@@ -250,11 +250,11 @@ Adapts AI Hero `prd-to-issues`. Key differences:
 - **Slice boundaries grounded in graphify**: queries the MCP server for module ownership of each touched concept. Surfaces dependency edges to inform the `is blocked by` chain.
 - **For features touching >1 repo**: optionally creates a contract Confluence sub-page (only if cross-app contract is non-trivial; otherwise the contract goes inline into each child description).
 - **Per-repo child creation**: `createJiraIssue` per slice with:
-  - Issue type per child heuristic (Task / Technical Story / Research / Design).
-  - `Component` set to the in-scope repo name.
+  - Issue type per child heuristic (`Task` / `Technical Story` / `Research ` / `Design ` — note trailing space on the latter two).
+  - `Component` set to the in-scope repo name (`payment-platform`, `walletapi`, `infrastructure`, or `spring-boot-starters`).
   - Description = self-contained, AI-copyable prompt (see structure below).
-  - Link to parent via `createIssueLink` type `implements`.
-  - Title prefix `[BE]`.
+  - Link to parent via `createIssueLink` type `Implement` (`inwardIssue` = parent, `outwardIssue` = child). Reads as "child implements parent".
+  - Title prefix `[BE]` for backend slices, `Spike:` / `Research:` for research, `Design:` for design.
 - **Ceremony Sub-tasks**: for every `Task` and `Technical Story` child, auto-creates the 5 standard Sub-tasks.
 - **Ordering**: creates `is blocked by` links between siblings per the dependency graph.
 - **Spike slices**: when the PRD calls for research, creates a `Research` ticket as a child of the parent. Does NOT create ceremony Sub-tasks under Research.
@@ -320,20 +320,20 @@ Checklist (all must pass):
 
 - Acceptance criteria are present, testable, and at least one explicit test name is suggested.
 - All `is blocked by` tickets are in `Done` state.
-- Exactly one `Component` is set and is in the in-scope list.
-- Ticket is linked to a parent via `implements`.
-- Status is at or beyond "Ready for Eng Review" (exact name TBD per `jira-conventions.md`).
-- Issue type is `Task` or `Technical Story` (Research and Design are never `ai-ready`).
+- Exactly one repo-shaped `Component` is set and is in the in-scope list (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`). Domain-shaped Components (e.g., `Wallet (Transfers)`) are tolerated alongside but not required.
+- Ticket is linked to a parent via the `Implement` link type (outward `implements` from child to parent).
+- Status is `next` (which means the engineer has already eng-reviewed it; see [`.agents/jira-conventions.md`](../.agents/jira-conventions.md) for the gate mapping).
+- Issue type is `Task` or `Technical Story` (`Research ` and `Design ` children are never `ai-ready`).
 
 Behavior:
 
-- On all-pass: `addCommentToJiraIssue` with checklist results, applies `ai-ready` label via `editJiraIssue`, and `transitionJiraIssue` to "Ready for Development".
-- On any-fail: posts a comment listing failed items, removes the `ai-ready` label if present.
+- On all-pass: `addCommentToJiraIssue` with checklist results, applies `ai-ready` label via `editJiraIssue`. Status stays at `next` (no further transition — minions pick up from here in stage 3).
+- On any-fail: posts a comment listing failed items, removes the `ai-ready` label if present. Status unchanged.
 
 ## HITL gates
 
 - **Gate A — after PRD interview, before `prd-to-jira-issues`**: PM reviews the parent Story description (or Confluence page if elevated), edits in place, then explicitly invokes `prd-to-jira-issues`.
-- **Gate B — eng feasibility per child issue**: each child has the relevant eng lead added as a watcher (configured per Component in `jira-conventions.md`). Eng lead reviews and **transitions the ticket** past "Ready for Eng Review". `ai-ready-check` requires this status.
+- **Gate B — eng feasibility per child issue**: each child has the relevant eng lead added as a watcher (configured per Component in `jira-conventions.md`). Eng lead reviews and **transitions the ticket from `To Do → next`** (transition id `221`, "To Do to Next") — this transition IS the eng-reviewed signal. `ai-ready-check` requires `status = next`.
 - **Gate C — `ai-ready-check` enforcement**: invoked when a reviewer adds the `ai-ready` label (or on demand). On fail, removes the label and explains why.
 
 ## Demo success criterion
@@ -350,7 +350,7 @@ A 25-minute live walkthrough using a real cross-repo feature (suggested: "expose
   - `Spike: do we need transactional outbox for this event?` — Research ticket, no Sub-tasks.
   - All linked to the parent Technical Story via `implements` (~5 min).
 5. Engineer runs `spike-and-report` against the Research ticket → throwaway worktree, agent investigates outbox patterns, writes a Confluence research sub-page with a recommendation, comments the link on the Research ticket (~5 min).
-6. Eng lead reviews the publisher Technical Story, transitions it to "Ready for Eng Review". Reviewer adds `ai-ready`. `ai-ready-check` runs → checklist passes → label confirmed and ticket transitioned to "Ready for Development" (~2 min).
+6. Eng lead reviews the publisher Technical Story, transitions it `To Do → next` (the eng-reviewed gate). Reviewer adds `ai-ready` label. `ai-ready-check` runs → checklist passes → label confirmed; ticket stays in `next`, ready for the future minion dispatcher (~2 min).
 
 ## What's explicitly out of scope for this PoC
 
@@ -365,9 +365,10 @@ A 25-minute live walkthrough using a real cross-repo feature (suggested: "expose
 
 ## Open setup details to resolve during bootstrap
 
-- **PLTPM workflow status names**: confirm the actual labels for "ready for eng review" and "ready for development" (or whatever PLTPM uses). Update `jira-conventions.md` and the `ai-ready-check` skill's transition target.
-- **Jira Components for the 4 product repos**: verify they exist in PLTPM; create via Jira admin if missing.
-- `**implements` link type**: verify it's enabled in PLTPM; if not, pick the closest available (`relates to` is universal but weaker semantics) and document the choice.
+- ✅ **PLTPM workflow status names**: discovered. Workflow is `To Do → next → In Progress → ...`. Gates collapsed onto `next` (status) + `ai-ready` (label). See [`.agents/jira-conventions.md`](../.agents/jira-conventions.md).
+- ⚠️ **Jira Components for the 4 product repos**: do NOT exist in PLTPM. PLTPM uses domain-shaped Components only. **Action**: create 4 repo-shaped Components (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`) via Jira admin at <https://moneylion.atlassian.net/jira/software/c/projects/PLTPM/components>. They will coexist with existing domain Components.
+- ✅ **`Implement` link type**: enabled in PLTPM (id `19455`, outward `implements`, inward `is implemented by`). Note: there is also `Polaris work item link` with the same semantics — gru must use `Implement`, never Polaris.
+- ⚠️ **Issue type names with trailing whitespace**: `Research ` (id `10720`), `Design ` (id `10747`), `Analytics ` (id `10753`) all have a trailing space in their PLTPM type names. Skills must use the exact strings (with trailing space) when creating these issues via API.
 - **Per-repo git hook vs. `--watch` daemon for graphify**: confirm whether `graphify hook install` per repo correctly drives the merged-corpus rebuild. If not, default to `--watch`.
 - **Initial graphify bootstrap cost**: measure the first `/graphify .` run; narrow the corpus or use `--update` on a subset if cost is unexpectedly high.
 - **Naming collisions across product repos**: review `GRAPH_REPORT.md` for false-positive cross-edges.
@@ -379,7 +380,7 @@ A 25-minute live walkthrough using a real cross-repo feature (suggested: "expose
 When/if stage 3 is green-lit, gru's outputs are the inputs unchanged:
 
 - The graphify graph + narrative layer becomes the minion's repo orientation context.
-- `jira-conventions.md` defines the JQL the minion dispatcher queries on (`labels = ai-ready AND status = "Ready for Development" AND component in (...) AND issuetype in (Task, "Technical Story")`).
+- `jira-conventions.md` defines the JQL the minion dispatcher queries on (`labels = ai-ready AND status = "next" AND component in (...) AND issuetype in (Task, "Technical Story")`).
 - The `ai-ready` label + status combination becomes the dispatcher's gate.
 - The AI-optimized child description structure is *literally* the minion's work prompt — no transformation needed.
 - HITL Gates A and B do not change; only Gate C (PR review) is added.
