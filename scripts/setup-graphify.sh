@@ -16,9 +16,11 @@
 #   - Claude Code installed (verified separately; this script doesn't check).
 #
 # Usage:
-#   ./scripts/setup-graphify.sh                # full setup
-#   ./scripts/setup-graphify.sh --no-pip       # skip pip install (manual install)
-#   ./scripts/setup-graphify.sh --check        # verify state, make no changes
+#   ./scripts/setup-graphify.sh                  # full setup (pipx preferred)
+#   ./scripts/setup-graphify.sh --no-pip         # skip install (you'll install graphify yourself)
+#   ./scripts/setup-graphify.sh --pip-fallback   # force pip3 install with --break-system-packages
+#                                                # (last resort; pipx is recommended on macOS / PEP 668)
+#   ./scripts/setup-graphify.sh --check          # verify state, make no changes
 
 set -euo pipefail
 
@@ -30,11 +32,13 @@ REPOS=(payment-platform walletapi infrastructure spring-boot-starters)
 # ---- flags ----
 DO_PIP=1
 CHECK_ONLY=0
+PIP_FALLBACK=0
 for arg in "$@"; do
   case "$arg" in
     --no-pip) DO_PIP=0 ;;
+    --pip-fallback) PIP_FALLBACK=1 ;;
     --check) CHECK_ONLY=1 ;;
-    -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
@@ -90,30 +94,48 @@ for r in "${REPOS[@]}"; do
 done
 
 # ---- 3. graphify install ----
+# Prefer pipx (handles PEP 668 / externally-managed Python on macOS Homebrew cleanly).
+# Fall back to pip3 with --break-system-packages only if the user explicitly opts in.
 if [[ "$DO_PIP" == "1" ]]; then
   log "Checking graphify CLI"
   if command -v graphify &>/dev/null; then
     ok "graphify already installed: $(command -v graphify)"
-  else
-    if [[ "$CHECK_ONLY" == "1" ]]; then
-      warn "graphify CLI missing (would 'pip install graphifyy && graphify install')"
-    else
-      PIP=""
-      if command -v pip3 &>/dev/null; then PIP=pip3; elif command -v pip &>/dev/null; then PIP=pip; fi
-      if [[ -z "$PIP" ]]; then
-        err "pip / pip3 not found. Install Python 3.10+ first, then re-run."
-        err "Or run with --no-pip and install graphify manually per https://github.com/safishamsi/graphify#install."
-        exit 1
-      fi
-      log "Installing graphify via $PIP install --user graphifyy"
-      "$PIP" install --user graphifyy
-      log "Registering graphify Claude Code skill"
-      graphify install
-      ok "installed"
+  elif [[ "$CHECK_ONLY" == "1" ]]; then
+    warn "graphify CLI missing"
+  elif [[ "$PIP_FALLBACK" == "1" ]]; then
+    PIP=""
+    if command -v pip3 &>/dev/null; then PIP=pip3; elif command -v pip &>/dev/null; then PIP=pip; fi
+    if [[ -z "$PIP" ]]; then
+      err "pip / pip3 not found. Install Python 3.10+ first, then re-run."
+      exit 1
     fi
+    log "Installing graphify via $PIP install --user --break-system-packages graphifyy (fallback mode)"
+    warn "fallback mode bypasses PEP 668. pipx is the recommended path on macOS."
+    "$PIP" install --user --break-system-packages graphifyy
+    log "Registering graphify Claude Code skill"
+    graphify install
+    ok "installed"
+  elif command -v pipx &>/dev/null; then
+    log "Installing graphify via pipx install graphifyy"
+    pipx install graphifyy
+    log "Registering graphify Claude Code skill"
+    graphify install
+    ok "installed"
+  elif command -v brew &>/dev/null; then
+    err "pipx not installed and pipx is required (macOS Homebrew Python is externally-managed; PEP 668)."
+    err "Install pipx, then re-run this script:"
+    err "  brew install pipx && pipx ensurepath"
+    err ""
+    err "Alternatively, run with --pip-fallback to force pip --break-system-packages, or"
+    err "with --no-pip to install graphify manually."
+    exit 1
+  else
+    err "Neither pipx nor a usable pip path is set up cleanly."
+    err "Install pipx (https://pipx.pypa.io/stable/installation/) or run with --pip-fallback."
+    exit 1
   fi
 else
-  warn "skipping pip install (--no-pip). graphify CLI must be installed manually."
+  warn "skipping graphify install (--no-pip). The graphify CLI must be installed manually."
 fi
 
 # ---- 4. summary + next steps ----
