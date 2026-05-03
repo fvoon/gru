@@ -7,11 +7,33 @@ directionality, idempotency at the parse layer, and goldens.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
 import write_jira_children as wjc
+
+# Make `_lib/` importable so the test seam `import required_fields` works without
+# relying on `write_jira_children`'s side-effect-laden sys.path patching.
+_LIB_DIR = Path(__file__).resolve().parent.parent.parent.parent / "_lib"
+if str(_LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(_LIB_DIR))
+
+import required_fields as _rf  # noqa: E402
+
+_TEST_REQUIRED_FIELDS = _rf.parse_required_fields(
+    """## Required custom fields (PLTPM)
+
+- **`customfield_12881`** -- Activity Type
+  - Default: `Engineering excellence`
+  - Allowed: `New feature`, `Bug fix`, `Customer excellence`, `Engineering excellence`, `Ship & Learn`, `Others`
+  - Applies to: `Story`, `Technical Story`, `Task`, `Sub-task`, `Research `, `Design `
+  - Wire shape: `object`
+
+## End
+"""  # noqa: E501
+)
 
 # ----- helpers -----
 
@@ -400,6 +422,156 @@ class TestEmitActions:
         actions = wjc.emit_actions(slices, "PLTPM-99001")
         steps = [a["step"] for a in actions]
         assert steps == list(range(1, len(actions) + 1))
+
+
+# ----- required custom fields injection (F1 friction 6/10) -----
+
+
+class TestRequiredFieldsInjection:
+    """Every `atlassian.createJiraIssue` action -- both Phase 1 (slice creates)
+    and Phase 2 (Sub-task creates) -- must inject the conventions-declared
+    required customfields. Without injection the agent eats one HTTP 400 per
+    create attempt (12 retries on the F1 demo if not pre-empted).
+    """
+
+    def test_phase1_create_issue_carries_default_activity_type(self):
+        doc = _plan_doc(_slice_block("A"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(
+            slices, "PLTPM-99001", required_fields=_TEST_REQUIRED_FIELDS
+        )
+        creates = _slice_create_actions(actions)
+        assert creates[0]["args"]["additional_fields"] == {
+            "customfield_12881": {"value": "Engineering excellence"}
+        }
+
+    def test_phase2_subtasks_carry_default_activity_type(self):
+        doc = _plan_doc(_slice_block("A"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(
+            slices, "PLTPM-99001", required_fields=_TEST_REQUIRED_FIELDS
+        )
+        subtasks = _subtask_actions(actions)
+        assert len(subtasks) == 5
+        for s in subtasks:
+            assert s["args"]["additional_fields"] == {
+                "customfield_12881": {"value": "Engineering excellence"}
+            }
+
+    def test_research_slice_creates_carry_activity_type(self):
+        """Research/Design issue types must also receive the customfield
+        (`Research ` and `Design ` are listed in the conventions applies_to)."""
+        doc = _plan_doc(_slice_block("A", type_="Research"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(
+            slices, "PLTPM-99001", required_fields=_TEST_REQUIRED_FIELDS
+        )
+        create = _slice_create_actions(actions)[0]
+        assert create["args"]["issueType"] == "Research "
+        assert create["args"]["additional_fields"] == {
+            "customfield_12881": {"value": "Engineering excellence"}
+        }
+
+    def test_does_not_inject_into_issue_link_actions(self):
+        """createIssueLink actions don't take additional_fields and must not gain it."""
+        doc = _plan_doc(_slice_block("A"), _slice_block("B", depends_on="A"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(
+            slices, "PLTPM-99001", required_fields=_TEST_REQUIRED_FIELDS
+        )
+        for a in actions:
+            if a["tool"] == "atlassian.createIssueLink":
+                assert "additional_fields" not in a["args"]
+
+    def test_override_propagates_to_phase1_and_phase2(self):
+        """An override on the parent run carries through every create in the plan,
+        so a customer-facing PRD ends up with one consistent Activity Type."""
+        doc = _plan_doc(_slice_block("A"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(
+            slices,
+            "PLTPM-99001",
+            required_fields=_TEST_REQUIRED_FIELDS,
+            activity_type_override="Customer excellence",
+        )
+        all_creates = _slice_create_actions(actions) + _subtask_actions(actions)
+        for a in all_creates:
+            assert a["args"]["additional_fields"] == {
+                "customfield_12881": {"value": "Customer excellence"}
+            }
+
+    def test_empty_required_fields_dict_is_a_noop(self):
+        doc = _plan_doc(_slice_block("A"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(slices, "PLTPM-99001", required_fields={})
+        for a in _slice_create_actions(actions) + _subtask_actions(actions):
+            assert "additional_fields" not in a["args"]
+
+    def test_invalid_override_raises_invalidsliceplan(self):
+        doc = _plan_doc(_slice_block("A"))
+        slices = wjc.parse_slice_plan(doc)
+        with pytest.raises(wjc.InvalidSlicePlan, match="not in allowed"):
+            wjc.emit_actions(
+                slices,
+                "PLTPM-99001",
+                required_fields=_TEST_REQUIRED_FIELDS,
+                activity_type_override="Tornado",
+            )
+
+    def test_default_loads_from_conventions_when_required_fields_not_passed(self):
+        """End-to-end: build_plan parses the live conventions file."""
+        doc = _plan_doc(_slice_block("A"))
+        slices = wjc.parse_slice_plan(doc)
+        plan = wjc.build_plan(slices, "PLTPM-99001")
+        creates = _slice_create_actions(plan["actions"])
+        assert "customfield_12881" in creates[0]["args"]["additional_fields"]
+
+
+class TestActivityTypeFlagInMain:
+    def test_main_with_activity_type_flag_propagates_to_action_plan(
+        self, tmp_path: Path, run_main
+    ):
+        doc = _plan_doc(_slice_block("A"))
+        plan_path = tmp_path / "PLTPM-99001.md"
+        plan_path.write_text(doc, encoding="utf-8")
+
+        code, out, _ = run_main(
+            wjc.main,
+            "--slice-plan",
+            str(plan_path),
+            "--parent-key",
+            "PLTPM-99001",
+            "--activity-type",
+            "New feature",
+        )
+        assert code == 0
+        all_creates = [
+            a for a in out["actions"] if a["tool"] == "atlassian.createJiraIssue"
+        ]
+        assert len(all_creates) == 6  # 1 slice + 5 sub-tasks
+        for a in all_creates:
+            assert a["args"]["additional_fields"] == {
+                "customfield_12881": {"value": "New feature"}
+            }
+
+    def test_main_with_invalid_activity_type_returns_two(
+        self, tmp_path: Path, run_main
+    ):
+        doc = _plan_doc(_slice_block("A"))
+        plan_path = tmp_path / "PLTPM-99001.md"
+        plan_path.write_text(doc, encoding="utf-8")
+
+        code, _, err = run_main(
+            wjc.main,
+            "--slice-plan",
+            str(plan_path),
+            "--parent-key",
+            "PLTPM-99001",
+            "--activity-type",
+            "Tornado",
+        )
+        assert code == 2
+        assert "not in allowed" in err
 
 
 # ----- idempotency at parse layer -----

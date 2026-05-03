@@ -11,7 +11,7 @@ Entry point of the gru pipeline. The PM says "I want to add X"; this skill ends 
 
 1. **Invoke**: PM asks the agent "use the write-a-prd skill, I want to <feature idea>".
 2. **Success looks like**: a PLTPM Jira key (e.g. `PLTPM-XXXXX`) posted in chat, with the local draft cleaned up.
-3. **Precondition**: Atlassian MCP is mounted in the runtime. Graphify queries are served by the `_lib/graphify.py` harness helper — see "Harness helpers" in gru's `AGENTS.md`. No standalone graphify MCP is required.
+3. **Precondition**: Atlassian MCP is mounted in the runtime. Graphify queries are served by the `_lib/graphify.py` harness helper — see "Harness helpers" in gru's `AGENTS.md`. No standalone graphify MCP is required. The `## Required custom fields (PLTPM)` section in `.agents/jira-conventions.md` must be populated; if it carries the `<TBA — bootstrap>` placeholder, run `scripts/validate_required_fields.py --bootstrap` (one-time, manual).
 
 ## Workflow
 
@@ -24,7 +24,7 @@ The agent runs these 10 steps in order. Stop and ask the PM for input only at st
 5. **Review checkpoint**. Show the full draft to the PM. Iterate (back to step 3) until the PM says "ship it".
 6. **Validate components**. Run `scripts/validate_components.py`. If it returns `needs_fetch`, call `atlassian.getJiraProjectComponents` for `PLTPM` and re-run with `--components-fixture <saved.json>`. If it exits 1 (missing), refuse to proceed and point the PM at the bootstrap checklist in `.agents/jira-conventions.md`.
 7. **Score significance**. Run `scripts/significance_check.py --draft drafts/<slug>.md`. Capture stdout to `<slug>.decision.json`.
-8. **Plan write**. Run `scripts/write_jira_prd.py --draft drafts/<slug>.md --decision-json <slug>.decision.json`. If `requires_user_choice` is set, ask the PM which canonical repo "owns" the parent, then re-run with `--mode <inline|elevate>` plus an updated draft (or pass `--primary-component` once that flag is added; today, fix the draft).
+8. **Plan write**. Run `scripts/write_jira_prd.py --draft drafts/<slug>.md --decision-json <slug>.decision.json`. If `requires_user_choice` is set, ask the PM which canonical repo "owns" the parent, then re-run with `--mode <inline|elevate>` plus an updated draft (or pass `--primary-component` once that flag is added; today, fix the draft). The plan automatically injects every PLTPM-required customfield (e.g. `customfield_12881` Activity Type) declared in `.agents/jira-conventions.md` `## Required custom fields (PLTPM)` into the parent's `additional_fields`. To override the project default for this PRD only, pass `--activity-type "<value>"` (must be one of the conventions-allowed values; otherwise the script exits 2).
 9. **Execute**. For each action in the plan, call the resolved Atlassian MCP tool. Substitute `{{confluence_page_url}}` and `{{parent_issue_key}}` from earlier steps. The script never calls MCP itself — the agent is the executor.
 10. **Cleanup**. Post the new Jira key (and Confluence URL if elevated) in chat, then delete `drafts/<slug>.md` and `<slug>.decision.json`. Do not commit drafts.
 

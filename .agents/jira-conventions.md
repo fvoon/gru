@@ -2,8 +2,8 @@
 
 > Source of truth for Jira- and Confluence-side conventions. gru skills MUST read values from this file at runtime — never hardcode them. Update this file when conventions change; bump the schema version below if a change is breaking.
 >
-> **Schema version**: 3
-> **Last verified against PLTPM**: 2026-05-02
+> **Schema version**: 4
+> **Last verified against PLTPM**: 2026-05-03
 
 ## Site
 
@@ -95,6 +95,24 @@ Avoid for gru-driven flow:
 - Slice involves QA loop and is backend-focused → `Technical Story`.
 - Pure research / spike → `Research ` (trailing space).
 - Pure design work → `Design ` (trailing space).
+
+## Required custom fields (PLTPM)
+
+> PLTPM marks several Jira custom fields as **required at issue creation time**. gru emitter scripts (`write_jira_prd.py`, `write_jira_children.py`) inject these values into every `atlassian.createJiraIssue` action plan via the shared helper `_lib/required_fields.py`. Without injection, the agent in chat eats an HTTP 400 per attempt (the F1 demo on `PLTPM-21272` proved this — 1 retry on the parent and pre-empted 12 retries on the children).
+>
+> Defaults below were chosen by the PM during one-time bootstrap (`validate_required_fields.py --bootstrap`); per-PRD overrides flow through `write_jira_prd.py --activity-type "<value>"` (or the equivalent flag for any other field below). Drift against live Jira metadata is detectable via `validate_required_fields.py --drift-check`.
+
+- **`customfield_12881`** — Activity Type
+  - Default: `Engineering excellence`
+  - Allowed: `New feature`, `Bug fix`, `Customer excellence`, `Engineering excellence`, `Ship & Learn`, `Others`
+  - Applies to: `Story`, `Technical Story`, `Task`, `Sub-task`, `Research `, `Design `
+  - Wire shape: `object`
+
+Notes (informational; the parser does not consume these):
+
+- The trailing space on `Research ` / `Design ` is intentional — PLTPM's issue-type names carry the space (see `## Issue types (PLTPM)`).
+- "Wire shape `object`" means the value is wrapped: `{"customfield_12881": {"value": "Engineering excellence"}}`. Single-select Jira customfields use this shape; free-text fields use `scalar` (bare string).
+- The PM's choice of `Engineering excellence` for `PLTPM-21272` reflects compliance-driven internal infra; customer-facing PRDs may legitimately want `Customer excellence` or `New feature` instead — that's the override path.
 
 ## Workflow
 

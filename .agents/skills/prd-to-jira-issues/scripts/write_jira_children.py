@@ -35,15 +35,43 @@ import argparse
 import json
 import re
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
-# Shared markdown helpers.
+# Shared markdown + required-fields helpers.
 SCRIPT_DIR = Path(__file__).resolve().parent
 _LIB_PATH = SCRIPT_DIR.parent.parent / "_lib"
 if str(_LIB_PATH) not in sys.path:
     sys.path.insert(0, str(_LIB_PATH))
 
 from markdown import parse_keyvalue_block, split_top_level_sections  # noqa: E402
+from required_fields import (  # noqa: E402
+    FieldSpec,
+    inject_required_fields,
+    parse_required_fields,
+)
+
+ACTIVITY_TYPE_FIELD_ID = "customfield_12881"
+
+
+def _find_conventions(start: Path) -> Path:
+    """Walk up from `start` looking for `.agents/jira-conventions.md`.
+
+    Mirrors validate_components.find_conventions but lives here to avoid
+    cross-skill imports (write-a-prd's scripts/ folder isn't on sys.path
+    when prd-to-jira-issues runs).
+    """
+    cur = start.resolve()
+    for _ in range(8):
+        candidate = cur / ".agents" / "jira-conventions.md"
+        if candidate.exists():
+            return candidate
+        if cur.parent == cur:
+            break
+        cur = cur.parent
+    raise FileNotFoundError(
+        f"could not find .agents/jira-conventions.md walking up from {start}"
+    )
 
 CANONICAL_COMPONENTS = (
     "payment-platform",
@@ -190,8 +218,43 @@ def _atlassian_issue_type(internal_type: str) -> str:
     return internal_type
 
 
-def emit_actions(slices: list[dict], parent_key: str) -> list[dict]:
-    """Build the deterministic 4-phase action sequence."""
+def emit_actions(
+    slices: list[dict],
+    parent_key: str,
+    required_fields: Mapping[str, FieldSpec] | None = None,
+    activity_type_override: str | None = None,
+) -> list[dict]:
+    """Build the deterministic 4-phase action sequence.
+
+    Required-fields injection: every `atlassian.createJiraIssue` action
+    (Phase 1 slice creates AND Phase 2 ceremony Sub-tasks) gets
+    `additional_fields.<customfield_id>` populated from `required_fields`.
+    `required_fields=None` means parse `.agents/jira-conventions.md`;
+    pass `{}` to skip injection (used by tests that don't care).
+    `activity_type_override` is a convenience shortcut for `customfield_12881`.
+
+    Raises InvalidSlicePlan when injection rejects an override (typo guard
+    or value not in the conventions allowed list).
+    """
+    if required_fields is None:
+        try:
+            conventions_text = _find_conventions(SCRIPT_DIR).read_text(encoding="utf-8")
+            required_fields = parse_required_fields(conventions_text)
+        except (FileNotFoundError, ValueError) as exc:
+            raise InvalidSlicePlan(
+                f"could not load required custom fields from conventions: {exc}"
+            ) from exc
+
+    overrides: dict[str, str] = {}
+    if activity_type_override is not None:
+        overrides[ACTIVITY_TYPE_FIELD_ID] = activity_type_override
+
+    def _inject(args: dict, issue_type: str) -> dict:
+        try:
+            return inject_required_fields(args, required_fields, issue_type, overrides)
+        except ValueError as exc:
+            raise InvalidSlicePlan(str(exc)) from exc
+
     project_key = _project_key_from_parent(parent_key)
     actions: list[dict] = []
     step = 0
@@ -209,15 +272,19 @@ def emit_actions(slices: list[dict], parent_key: str) -> list[dict]:
     # Phase 1: createJiraIssue per slice
     for s in slices:
         letter = s["letter"]
+        slice_issue_type = _atlassian_issue_type(s["type"])
         add(
             "atlassian.createJiraIssue",
-            {
-                "projectKey": project_key,
-                "issueType": _atlassian_issue_type(s["type"]),
-                "summary": s["title"],
-                "description": s["description"],
-                "components": [{"name": s["component"]}],
-            },
+            _inject(
+                {
+                    "projectKey": project_key,
+                    "issueType": slice_issue_type,
+                    "summary": s["title"],
+                    "description": s["description"],
+                    "components": [{"name": s["component"]}],
+                },
+                slice_issue_type,
+            ),
             stores_as=f"slice_{letter}_key",
             purpose=f"Create slice {letter} as a {s['type']} child of {parent_key}.",
         )
@@ -233,13 +300,16 @@ def emit_actions(slices: list[dict], parent_key: str) -> list[dict]:
         for subtask_name in CEREMONY_SUBTASKS:
             add(
                 "atlassian.createJiraIssue",
-                {
-                    "projectKey": project_key,
-                    "issueType": "Sub-task",
-                    "summary": subtask_name,
-                    "description": "",
-                    "parent": _slice_key_token(letter),
-                },
+                _inject(
+                    {
+                        "projectKey": project_key,
+                        "issueType": "Sub-task",
+                        "summary": subtask_name,
+                        "description": "",
+                        "parent": _slice_key_token(letter),
+                    },
+                    "Sub-task",
+                ),
                 purpose=(
                     f"Ceremony Sub-task for slice {letter} "
                     f"(per .agents/jira-conventions.md)."
@@ -280,13 +350,23 @@ def emit_actions(slices: list[dict], parent_key: str) -> list[dict]:
     return actions
 
 
-def build_plan(slices: list[dict], parent_key: str) -> dict:
+def build_plan(
+    slices: list[dict],
+    parent_key: str,
+    required_fields: Mapping[str, FieldSpec] | None = None,
+    activity_type_override: str | None = None,
+) -> dict:
     return {
         "status": "ok",
         "parent_key": parent_key,
         "slice_count": len(slices),
         "letters": [s["letter"] for s in slices],
-        "actions": emit_actions(slices, parent_key),
+        "actions": emit_actions(
+            slices,
+            parent_key,
+            required_fields=required_fields,
+            activity_type_override=activity_type_override,
+        ),
     }
 
 
@@ -306,6 +386,16 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
         help="Parent issue key, e.g. PLTPM-21500.",
     )
+    parser.add_argument(
+        "--activity-type",
+        default=None,
+        help=(
+            "Override the default Activity Type (customfield_12881) for every "
+            "createJiraIssue in this plan (slice creates + Sub-tasks). Must be one of "
+            "the values listed in `## Required custom fields (PLTPM)` in "
+            ".agents/jira-conventions.md. When omitted, the conventions default is used."
+        ),
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -321,7 +411,15 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "invalid", "reason": str(exc)}))
         return 1
 
-    plan = build_plan(slices, args.parent_key)
+    try:
+        plan = build_plan(
+            slices,
+            args.parent_key,
+            activity_type_override=args.activity_type,
+        )
+    except InvalidSlicePlan as exc:
+        print(json.dumps({"status": "error", "reason": str(exc)}), file=sys.stderr)
+        return 2
     print(json.dumps(plan, indent=2, ensure_ascii=False))
     return 0
 

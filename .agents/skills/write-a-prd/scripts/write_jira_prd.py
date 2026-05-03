@@ -30,10 +30,12 @@ import argparse
 import json
 import re
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
-# Markdown helpers live in _lib (shared across skills); ELEVATE_MARKER stays in
-# significance_check because it's specific to write-a-prd's heuristic.
+# Markdown + required-fields helpers live in _lib (shared across skills);
+# ELEVATE_MARKER stays in significance_check because it's specific to
+# write-a-prd's heuristic.
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 _LIB_PATH = SCRIPT_DIR.parent.parent / "_lib"
@@ -41,8 +43,16 @@ if str(_LIB_PATH) not in sys.path:
     sys.path.insert(0, str(_LIB_PATH))
 
 from markdown import extract_h1_title, split_top_level_sections  # noqa: E402
+from required_fields import (  # noqa: E402
+    FieldSpec,
+    inject_required_fields,
+    parse_required_fields,
+)
 
 from significance_check import ELEVATE_MARKER  # noqa: E402
+from validate_components import find_conventions  # noqa: E402
+
+ACTIVITY_TYPE_FIELD_ID = "customfield_12881"
 
 # ----- canonical config (must stay in lockstep with .agents/jira-conventions.md) -----
 
@@ -201,14 +211,37 @@ def plan(
     mode: str,
     project_key: str = "PLTPM",
     confluence_space: str = "PS",
+    required_fields: Mapping[str, FieldSpec] | None = None,
+    activity_type_override: str | None = None,
 ) -> dict:
     """Build an action plan dict for the given draft + mode.
 
     Raises InvalidDraft on missing sections / missing H1 title / no canonical repo
-    references in Cross-App Impact.
+    references in Cross-App Impact, or when required-field injection fails (e.g.
+    `--activity-type` value not in the allowed list).
+
+    Required-fields injection: every `atlassian.createJiraIssue` action gets
+    `additional_fields.<customfield_id>` populated from `required_fields` (parsed
+    from `.agents/jira-conventions.md` by default; pass an explicit dict for tests
+    that want to skip the disk read). `activity_type_override` is a convenience
+    shortcut for `customfield_12881`; for any other field, edit conventions or
+    pre-build `required_fields` directly.
     """
     if mode not in {"inline", "elevate"}:
         raise InvalidDraft(f"unknown mode: {mode!r} (expected 'inline' or 'elevate')")
+
+    if required_fields is None:
+        try:
+            conventions_text = find_conventions(SCRIPT_DIR).read_text(encoding="utf-8")
+            required_fields = parse_required_fields(conventions_text)
+        except (FileNotFoundError, ValueError) as exc:
+            raise InvalidDraft(
+                f"could not load required custom fields from conventions: {exc}"
+            ) from exc
+
+    overrides: dict[str, str] = {}
+    if activity_type_override is not None:
+        overrides[ACTIVITY_TYPE_FIELD_ID] = activity_type_override
 
     sections = split_top_level_sections(draft_text)
     missing = [s for s in REQUIRED_SECTIONS if s not in sections]
@@ -248,6 +281,12 @@ def plan(
 
     summary = truncate_summary(title)
 
+    def _inject(args: dict) -> dict:
+        try:
+            return inject_required_fields(args, required_fields, issue_type, overrides)
+        except ValueError as exc:
+            raise InvalidDraft(str(exc)) from exc
+
     if requires_user_choice is not None:
         actions: list[dict] = []
     elif mode == "inline":
@@ -256,13 +295,13 @@ def plan(
             {
                 "step": 1,
                 "tool": "atlassian.createJiraIssue",
-                "args": {
+                "args": _inject({
                     "projectKey": project_key,
                     "issueType": issue_type,
                     "components": [primary_component],
                     "summary": summary,
                     "description": description,
-                },
+                }),
                 "captures": "parent_issue_key",
             }
         ]
@@ -283,13 +322,13 @@ def plan(
             {
                 "step": 2,
                 "tool": "atlassian.createJiraIssue",
-                "args": {
+                "args": _inject({
                     "projectKey": project_key,
                     "issueType": issue_type,
                     "components": [primary_component],
                     "summary": summary,
                     "description": description,
-                },
+                }),
                 "captures": "parent_issue_key",
                 "substitutions": {
                     CONFLUENCE_PLACEHOLDER: "{{confluence_page_url}}",
@@ -358,6 +397,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--confluence-space", default="PS", help="Confluence space key for elevated PRDs."
     )
+    parser.add_argument(
+        "--activity-type",
+        default=None,
+        help=(
+            "Override the default Activity Type (customfield_12881) for this PRD. "
+            "Must be one of the values listed in `## Required custom fields (PLTPM)` "
+            "in .agents/jira-conventions.md. When omitted, the conventions default is used."
+        ),
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -373,6 +421,7 @@ def main(argv: list[str] | None = None) -> int:
             mode=mode,
             project_key=args.project_key,
             confluence_space=args.confluence_space,
+            activity_type_override=args.activity_type,
         )
     except InvalidDraft as exc:
         print(json.dumps({"status": "error", "reason": str(exc)}), file=sys.stderr)

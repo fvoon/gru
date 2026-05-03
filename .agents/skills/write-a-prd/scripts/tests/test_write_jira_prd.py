@@ -15,6 +15,13 @@ import pytest
 
 SCRIPT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(SCRIPT_DIR))
+# Make `_lib/` importable so the test seam `import required_fields` works without
+# relying on `write_jira_prd`'s side-effect-laden sys.path patching.
+_LIB_DIR = SCRIPT_DIR.parent.parent / "_lib"
+if str(_LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(_LIB_DIR))
+
+import required_fields as _rf  # noqa: E402
 
 from write_jira_prd import (  # noqa: E402
     _LIB_PATH,
@@ -33,6 +40,19 @@ from write_jira_prd import (  # noqa: E402
     main,
     plan,
     truncate_summary,
+)
+
+_TEST_REQUIRED_FIELDS = _rf.parse_required_fields(
+    """## Required custom fields (PLTPM)
+
+- **`customfield_12881`** -- Activity Type
+  - Default: `Engineering excellence`
+  - Allowed: `New feature`, `Bug fix`, `Customer excellence`, `Engineering excellence`, `Ship & Learn`, `Others`
+  - Applies to: `Story`, `Technical Story`, `Task`, `Sub-task`, `Research `, `Design `
+  - Wire shape: `object`
+
+## End
+"""  # noqa: E501
 )
 
 # ---------- module bootstrap ----------
@@ -548,3 +568,120 @@ def test_canonical_components_locked():
     conventions = find_conventions(SCRIPT_DIR).read_text(encoding="utf-8")
     from_conventions = parse_canonical_components(conventions)
     assert list(CANONICAL_COMPONENTS) == from_conventions
+
+
+# ---------- required custom fields injection (F1 friction 6/10) ----------
+
+
+class TestRequiredFieldsInjection:
+    """The plan() output must inject every customfield in the conventions
+    `## Required custom fields` section into the args of every
+    `atlassian.createJiraIssue` action -- otherwise the agent in chat
+    eats an HTTP 400 per attempt.
+    """
+
+    def _create_issue_actions(self, result: dict) -> list[dict]:
+        return [a for a in result["actions"] if a["tool"] == "atlassian.createJiraIssue"]
+
+    def test_inline_path_injects_default_activity_type(self):
+        result = plan(_draft(), mode="inline", required_fields=_TEST_REQUIRED_FIELDS)
+        creates = self._create_issue_actions(result)
+        assert len(creates) == 1
+        assert creates[0]["args"]["additional_fields"] == {
+            "customfield_12881": {"value": "Engineering excellence"}
+        }
+
+    def test_elevate_path_injects_default_activity_type_on_jira_action(self):
+        result = plan(
+            _draft(elevate_marker=True),
+            mode="elevate",
+            required_fields=_TEST_REQUIRED_FIELDS,
+        )
+        creates = self._create_issue_actions(result)
+        assert len(creates) == 1
+        assert creates[0]["args"]["additional_fields"] == {
+            "customfield_12881": {"value": "Engineering excellence"}
+        }
+
+    def test_does_not_inject_into_confluence_action(self):
+        """createConfluencePage and addConfluenceRemoteLinkToJiraIssue must not gain
+        `additional_fields` (they aren't Jira-issue creates)."""
+        result = plan(
+            _draft(elevate_marker=True),
+            mode="elevate",
+            required_fields=_TEST_REQUIRED_FIELDS,
+        )
+        for action in result["actions"]:
+            if action["tool"] != "atlassian.createJiraIssue":
+                assert "additional_fields" not in action["args"]
+
+    def test_override_uses_chosen_value(self):
+        result = plan(
+            _draft(),
+            mode="inline",
+            required_fields=_TEST_REQUIRED_FIELDS,
+            activity_type_override="Customer excellence",
+        )
+        creates = self._create_issue_actions(result)
+        assert creates[0]["args"]["additional_fields"] == {
+            "customfield_12881": {"value": "Customer excellence"}
+        }
+
+    def test_invalid_override_value_raises(self):
+        with pytest.raises(InvalidDraft, match="not in allowed"):
+            plan(
+                _draft(),
+                mode="inline",
+                required_fields=_TEST_REQUIRED_FIELDS,
+                activity_type_override="Tornado",
+            )
+
+    def test_empty_required_fields_dict_is_a_noop(self):
+        """Passing an empty fields dict (e.g. tests that don't care about injection)
+        should not add `additional_fields` to any action."""
+        result = plan(_draft(), mode="inline", required_fields={})
+        creates = self._create_issue_actions(result)
+        assert "additional_fields" not in creates[0]["args"]
+
+    def test_default_loads_from_conventions_when_required_fields_not_passed(self):
+        """When the caller doesn't supply required_fields, plan() must parse
+        the live `.agents/jira-conventions.md` file. End-to-end check that the
+        wire-up actually reads from disk."""
+        result = plan(_draft(), mode="inline")
+        creates = self._create_issue_actions(result)
+        assert "additional_fields" in creates[0]["args"]
+        assert "customfield_12881" in creates[0]["args"]["additional_fields"]
+
+    def test_plan_remains_idempotent_after_injection(self):
+        a = plan(_draft(), mode="inline", required_fields=_TEST_REQUIRED_FIELDS)
+        b = plan(_draft(), mode="inline", required_fields=_TEST_REQUIRED_FIELDS)
+        assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+
+
+class TestActivityTypeFlagInMain:
+    def test_main_with_activity_type_flag_propagates_to_action_plan(self, tmp_path, run_main):
+        draft = tmp_path / "draft.md"
+        draft.write_text(_draft(), encoding="utf-8")
+        code, result, _ = run_main(
+            main,
+            "--draft", str(draft),
+            "--mode", "inline",
+            "--activity-type", "New feature",
+        )
+        assert code == 0
+        creates = [a for a in result["actions"] if a["tool"] == "atlassian.createJiraIssue"]
+        assert creates[0]["args"]["additional_fields"] == {
+            "customfield_12881": {"value": "New feature"}
+        }
+
+    def test_main_with_invalid_activity_type_returns_two(self, tmp_path, run_main):
+        draft = tmp_path / "draft.md"
+        draft.write_text(_draft(), encoding="utf-8")
+        code, _, err = run_main(
+            main,
+            "--draft", str(draft),
+            "--mode", "inline",
+            "--activity-type", "Tornado",
+        )
+        assert code == 2
+        assert "not in allowed" in err

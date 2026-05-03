@@ -29,7 +29,12 @@
           "payment-platform"
         ],
         "summary": "Transfers V3 internal saga overhaul for ACH return reliability",
-        "description": "**This is a significant PRD; the full text lives in Confluence.**\n\n**Confluence**: <CONFLUENCE_PAGE_URL>\n\n## Problem Statement\nThe current TransferSaga implementation in payment-platform handles ACH returns through a brittle chain of event handlers. When Payliance pushes a return entry mid-saga, the saga occasionally double-reverses the wallet ledger, producing duplicate debit events that operations has to manually unwind.\n\n## Out of Scope\n- walletapi changes — wallet ledger correctness is downstream of saga correctness; this PRD only changes the saga.\n- Payliance contract changes — we treat their feed as the source of truth; any contract negotiation is a separate workstream.\n- Replacing the existing SQS topology with EventBridge — debated but deferred; the saga refactor is independently valuable.\n- Manually unwinding historical duplicate debits — operations team owns that cleanup, tracked separately.\n\n## Cross-Application Impact\n- payment-platform\n\n---\nSee Confluence for full user stories, implementation decisions, references, and any embedded diagrams.\n"
+        "description": "**This is a significant PRD; the full text lives in Confluence.**\n\n**Confluence**: <CONFLUENCE_PAGE_URL>\n\n## Problem Statement\nThe current TransferSaga implementation in payment-platform handles ACH returns through a brittle chain of event handlers. When Payliance pushes a return entry mid-saga, the saga occasionally double-reverses the wallet ledger, producing duplicate debit events that operations has to manually unwind.\n\n## Out of Scope\n- walletapi changes — wallet ledger correctness is downstream of saga correctness; this PRD only changes the saga.\n- Payliance contract changes — we treat their feed as the source of truth; any contract negotiation is a separate workstream.\n- Replacing the existing SQS topology with EventBridge — debated but deferred; the saga refactor is independently valuable.\n- Manually unwinding historical duplicate debits — operations team owns that cleanup, tracked separately.\n\n## Cross-Application Impact\n- payment-platform\n\n---\nSee Confluence for full user stories, implementation decisions, references, and any embedded diagrams.\n",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "captures": "parent_issue_key",
       "substitutions": {

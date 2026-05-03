@@ -160,21 +160,23 @@ Single-phase output. The action plan is deterministic and ordered into 4 phases:
 
 | Phase | Tool | Per slice | Notes |
 |---|---|---|---|
-| 1 | `atlassian.createJiraIssue` | 1 | Stores child key as `slice_<letter>_key`. |
-| 2 | `atlassian.createJiraSubtask` | 5 | Skipped for `Research`/`Design`. Names: `Development`, `Code Review 1`, `Code Review 2`, `Test case creation`, `Test case execution`. Empty descriptions. |
-| 3 | `atlassian.createIssueLink` (`Implement`) | 1 | `inwardIssue=parent`, `outwardIssue={{slice_<letter>_key}}`. |
+| 1 | `atlassian.createJiraIssue` (slice) | 1 | Stores child key as `slice_<letter>_key`. Carries `additional_fields` with every PLTPM-required customfield (e.g. `customfield_12881` Activity Type). |
+| 2 | `atlassian.createJiraIssue` (Sub-task) | 5 | Skipped for `Research`/`Design`. `issueType="Sub-task"`, `parent={{slice_<letter>_key}}`. The Atlassian MCP exposes no `createJiraSubtask` tool — sub-tasks are created via `createJiraIssue` with the top-level `parent` field. Same `additional_fields` injection as Phase 1. Names: `Development`, `Code Review 1`, `Code Review 2`, `Test case creation`, `Test case execution`. Empty descriptions. |
+| 3 | `atlassian.createIssueLink` (`Implement`) | 1 | `inwardIssue=parent`, `outwardIssue={{slice_<letter>_key}}`. No `additional_fields`. |
 | 4 | `atlassian.createIssueLink` (`Blocks`) | 0..N | One per `depends_on` entry. `inwardIssue={{blocker}}`, `outwardIssue={{blocked}}` per `.agents/jira-conventions.md` directionality. |
 
-Steps are 1-indexed and consecutive. Each `createJiraIssue` action carries `stores_as`. Each later step references prior keys via the `{{slice_<letter>_key}}` placeholder; the agent substitutes after each `createJiraIssue` returns.
+Steps are 1-indexed and consecutive. Each Phase 1 `createJiraIssue` action carries `stores_as`. Each later step references prior keys via the `{{slice_<letter>_key}}` placeholder; the agent substitutes after each `createJiraIssue` returns.
 
-Exit codes: `0` (plan emitted), `1` (slice plan invalid — `status: "invalid"` on stdout), `2` (IO error).
+`additional_fields` injection (Phases 1+2): every required customfield declared in `.agents/jira-conventions.md` `## Required custom fields (PLTPM)` is auto-injected into the action's `args`. Override via `--activity-type "<value>"` (must be in the conventions allowed list, else exit 2). Children inherit the parent's choice automatically when the same value is passed to both `write_jira_prd.py` and `write_jira_children.py`.
+
+Exit codes: `0` (plan emitted), `1` (slice plan invalid — `status: "invalid"` on stdout), `2` (IO error or required-fields injection rejection).
 
 ## Atlassian MCP call patterns
 
 Per `.agents/jira-conventions.md`:
 
-- `createJiraIssue` — fields needed: `projectKey` (`PLTPM` for gru), `issueType`, `summary`, `description`, `components` (array of `{name}`).
-- `createJiraSubtask` — fields needed: `parentIssueKey`, `summary`, `description`. Field defaults inherit from the parent issue.
+- `createJiraIssue` (slice) — fields needed: `projectKey` (`PLTPM` for gru), `issueType`, `summary`, `description`, `components` (array of `{name}`), `additional_fields` (auto-injected from conventions).
+- `createJiraIssue` (Sub-task) — fields needed: `projectKey`, `issueType="Sub-task"`, `summary`, `description`, `parent` (top-level field, NOT inside `additional_fields`), `additional_fields` (auto-injected from conventions). The Atlassian MCP exposes no separate `createJiraSubtask` tool — `createJiraIssue` with `issueType="Sub-task"` plus the top-level `parent` field is the canonical pattern.
 - `createIssueLink` — fields needed: `type` (one of `Implement`, `Blocks`), `inwardIssue`, `outwardIssue`. **Directionality**: inward = blocker / parent; outward = blocked / child.
 - `Research ` and `Design ` issue types have a trailing space — the action plan emits them with the space; do not strip whitespace from `args.issueType`.
 
@@ -211,10 +213,14 @@ It is **not** acceptable for production-grade automation. If re-runs cause real 
 | `propose_slices.py` exits 3 with `already exists` | Pre-existing redline file for this parent | Inspect; pass `--force` only if you want to overwrite the file (and lose any in-progress edits). |
 | `write_jira_children.py` exits 1 with `literal TODO` | PM/eng forgot to fill in acceptance criteria | Open the redline, replace the `<!-- TODO ... -->` placeholder + stub bullets with real ACs. |
 | Exits 1 with `unknown slice 'Z'` | `depends_on:` references a letter not present | Either rename a slice or remove the dangling dependency. |
+| Exits 2 with `not in allowed values` | `--activity-type` value isn't one of the conventions-allowed Activity Type values | Re-run with one of the conventions-allowed values, or add the new value to `.agents/jira-conventions.md` `## Required custom fields (PLTPM)` if Jira added it. |
+| Exits 2 with `Required custom fields section is still in bootstrap state` | Conventions section has the `<TBA — bootstrap>` placeholder | Run `write-a-prd/scripts/validate_required_fields.py --bootstrap`, fetch the metadata, populate the conventions section. |
 | Some slice creates but Sub-tasks fail | Atlassian rate limit or transient error | Re-run `write_jira_children.py`; the LLM filters succeeded steps from context (Issue 5B). |
+| HTTP 400 `<customfield_X> is required` on createIssue | New required customfield in PLTPM that conventions don't know about | Run `write-a-prd/scripts/validate_required_fields.py --drift-check --metadata-fixture <fresh fetch>` to confirm; then add the field to conventions and re-run. |
 
 ## Maintenance
 
 - `CANONICAL_COMPONENTS` in `validate_parent.py` and `propose_slices.py` and `write_jira_children.py` must stay in lockstep with `.agents/jira-conventions.md`. The sentinel test in `tests/test_validate_parent.py::TestCanonicalComponentsLocked` enforces this.
-- `_lib/markdown.py` is shared with `write-a-prd`. Refactors there must keep both skills' tests green (`(cd .agents/skills/write-a-prd/scripts && pytest)` and `(cd .agents/skills/prd-to-jira-issues/scripts && pytest)`).
+- `_lib/markdown.py` and `_lib/required_fields.py` are shared with `write-a-prd`. Refactors there must keep both skills' tests green (`(cd .agents/skills/write-a-prd/scripts && pytest)` and `(cd .agents/skills/prd-to-jira-issues/scripts && pytest)`).
 - `CEREMONY_SUBTASKS` in `write_jira_children.py` mirrors `.agents/jira-conventions.md` lines 188-194. Update both together.
+- The `## Required custom fields (PLTPM)` section in `.agents/jira-conventions.md` is the source of truth for what gets injected into every `createJiraIssue` action. When Jira adds or changes a required customfield, run `write-a-prd/scripts/validate_required_fields.py --drift-check --metadata-fixture <fresh fetch>` to detect drift, then update the section. The two `<slug>.expected.json` golden fixtures under `scripts/tests/fixtures/` will need regeneration whenever defaults change (the goldens lock the current contract, so drift is loud).

@@ -222,19 +222,69 @@ Common envelope:
     "issueType": "Story",
     "components": ["payment-platform"],
     "summary": "<title>",
-    "description": "<full draft minus H1 and elevate marker>"
+    "description": "<full draft minus H1 and elevate marker>",
+    "additional_fields": {
+      "customfield_12881": {"value": "Engineering excellence"}
+    }
   },
   "captures": "parent_issue_key"
 }
 ```
 
+`additional_fields` is auto-injected from the `## Required custom fields (PLTPM)` section of `.agents/jira-conventions.md`. The default Activity Type is `Engineering excellence`; override per-PRD with `--activity-type "<value>"` (must be one of the conventions-allowed values, else exit 2).
+
 **Elevate mode** — 3 actions in order:
 
 1. `atlassian.createConfluencePage` — `args.body` is the full draft (minus H1, minus elevate marker). Captures `confluence_page_url`.
-2. `atlassian.createJiraIssue` — `args.description` includes the literal placeholder `<CONFLUENCE_PAGE_URL>`. The `substitutions` field maps that placeholder to `{{confluence_page_url}}` (the value captured in step 1). Captures `parent_issue_key`.
+2. `atlassian.createJiraIssue` — `args.description` includes the literal placeholder `<CONFLUENCE_PAGE_URL>`. The `substitutions` field maps that placeholder to `{{confluence_page_url}}` (the value captured in step 1). Captures `parent_issue_key`. Also carries `additional_fields` (same shape as inline mode).
 3. `atlassian.addConfluenceRemoteLinkToJiraIssue` — `args.issueKey = "{{parent_issue_key}}"`, `args.url = "{{confluence_page_url}}"`. Establishes the Confluence remote link on the Jira issue.
 
 When `requires_user_choice` is set, `actions` is `[]`. The agent asks the PM, then re-invokes the script.
+
+### `validate_required_fields.py`
+
+One-time bootstrap + on-demand drift check for the `## Required custom fields (PLTPM)` section of `.agents/jira-conventions.md`. The two emitter scripts (`write_jira_prd.py`, `write_jira_children.py`) read that section every run and inject the declared customfield values into every `atlassian.createJiraIssue` action. This gate ensures the section stays in sync with what Jira actually requires.
+
+**Bootstrap mode** (`--bootstrap`) — emits a JSON action plan to fetch issue-type metadata for every gru-relevant PLTPM issue type:
+
+```json
+{
+  "status": "needs_fetch",
+  "issue_types": ["Story", "Technical Story", "Task", "Sub-task", "Research ", "Design "],
+  "actions": [
+    {"step": 1, "tool": "atlassian.getJiraProjectIssueTypesMetadata", "args": {"projectKey": "PLTPM"}, "purpose": "..."},
+    {"step": 2, "tool": "atlassian.getJiraIssueTypeMetaWithFields", "args": {"projectKey": "PLTPM", "issueTypeName": "Story"}, "purpose": "..."},
+    ...
+  ],
+  "next_step": "Save the union of responses to a JSON file ... or hand-edit .agents/jira-conventions.md ..."
+}
+```
+
+The PM uses the response to populate the conventions section (each required customfield's id, display name, default, allowed values, applies-to issue types, and wire shape).
+
+**Drift-check mode** (`--drift-check --metadata-fixture <path>`) — compares conventions against the saved fixture and reports drift. Output:
+
+```json
+{"status": "ok"}
+```
+
+…or, if any drift is detected (exit 1):
+
+```json
+{
+  "status": "drift",
+  "drifts": [
+    {"kind": "new" | "missing" | "allowed_values_changed" | "applies_to_changed", "field_id": "...", "issue_type": "...", "message": "..."},
+    ...
+  ]
+}
+```
+
+Drift kinds:
+- **new** — Jira marks a customfield as required for an issue type, but the conventions don't declare it. gru is not injecting it; the next demo will eat HTTP 400s.
+- **missing** — Conventions declare a field as required, but live Jira no longer marks it required (or the fixture's coverage of the issue type doesn't include the field). gru is over-injecting.
+- **allowed_values_changed** — Conventions allowed-values list differs from live Jira's. The conventions default may no longer be valid.
+- **applies_to_changed** — Conventions `Applies to` list does not cover every issue type Jira marks the field as required for. gru is not injecting on that type; HTTP 400s incoming.
 
 ## Atlassian MCP tool-name mapping
 

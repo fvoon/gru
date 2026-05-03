@@ -20,7 +20,12 @@
           {
             "name": "payment-platform"
           }
-        ]
+        ],
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "stores_as": "slice_A_key",
       "purpose": "Create slice A as a Task child of PLTPM-99002."
@@ -37,7 +42,12 @@
           {
             "name": "walletapi"
           }
-        ]
+        ],
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "stores_as": "slice_B_key",
       "purpose": "Create slice B as a Task child of PLTPM-99002."
@@ -54,7 +64,12 @@
           {
             "name": "payment-platform"
           }
-        ]
+        ],
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "stores_as": "slice_C_key",
       "purpose": "Create slice C as a Research child of PLTPM-99002."
@@ -67,7 +82,12 @@
         "issueType": "Sub-task",
         "summary": "Development",
         "description": "",
-        "parent": "{{slice_A_key}}"
+        "parent": "{{slice_A_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
@@ -79,7 +99,12 @@
         "issueType": "Sub-task",
         "summary": "Code Review 1",
         "description": "",
-        "parent": "{{slice_A_key}}"
+        "parent": "{{slice_A_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
@@ -91,7 +116,12 @@
         "issueType": "Sub-task",
         "summary": "Code Review 2",
         "description": "",
-        "parent": "{{slice_A_key}}"
+        "parent": "{{slice_A_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
@@ -103,7 +133,12 @@
         "issueType": "Sub-task",
         "summary": "Test case creation",
         "description": "",
-        "parent": "{{slice_A_key}}"
+        "parent": "{{slice_A_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
@@ -115,7 +150,12 @@
         "issueType": "Sub-task",
         "summary": "Test case execution",
         "description": "",
-        "parent": "{{slice_A_key}}"
+        "parent": "{{slice_A_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
@@ -127,7 +167,12 @@
         "issueType": "Sub-task",
         "summary": "Development",
         "description": "",
-        "parent": "{{slice_B_key}}"
+        "parent": "{{slice_B_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
     },
@@ -139,7 +184,12 @@
         "issueType": "Sub-task",
         "summary": "Code Review 1",
         "description": "",
-        "parent": "{{slice_B_key}}"
+        "parent": "{{slice_B_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
     },
@@ -151,7 +201,12 @@
         "issueType": "Sub-task",
         "summary": "Code Review 2",
         "description": "",
-        "parent": "{{slice_B_key}}"
+        "parent": "{{slice_B_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
     },
@@ -163,7 +218,12 @@
         "issueType": "Sub-task",
         "summary": "Test case creation",
         "description": "",
-        "parent": "{{slice_B_key}}"
+        "parent": "{{slice_B_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
     },
@@ -175,7 +235,12 @@
         "issueType": "Sub-task",
         "summary": "Test case execution",
         "description": "",
-        "parent": "{{slice_B_key}}"
+        "parent": "{{slice_B_key}}",
+        "additional_fields": {
+          "customfield_12881": {
+            "value": "Engineering excellence"
+          }
+        }
       },
       "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
     },

@@ -11,7 +11,7 @@ Second skill in the gru pipeline. Takes a parent ticket key produced by `write-a
 
 1. **Invoke**: "use the prd-to-jira-issues skill on PLTPM-XXXXX".
 2. **Success looks like**: a list of child Jira keys grouped by slice (`A: PLTPM-XXXXX, B: PLTPM-YYYYY ...`) posted in chat, with ceremony Sub-tasks, Implement links, and `is blocked by` chains in place.
-3. **Precondition**: Atlassian MCP and the parent ticket already exist (run `write-a-prd` first if not). Graphify queries are served by the `_lib/graphify.py` harness helper — see "Harness helpers" in gru's `AGENTS.md`. No standalone graphify MCP is required.
+3. **Precondition**: Atlassian MCP and the parent ticket already exist (run `write-a-prd` first if not). Graphify queries are served by the `_lib/graphify.py` harness helper — see "Harness helpers" in gru's `AGENTS.md`. No standalone graphify MCP is required. The `## Required custom fields (PLTPM)` section in `.agents/jira-conventions.md` must be populated (one-time bootstrap via `write-a-prd/scripts/validate_required_fields.py --bootstrap`); `write_jira_children.py` reads it on every run to inject `additional_fields` (e.g. `customfield_12881` Activity Type) into all 12+ createIssue actions.
 
 ## Workflow
 
@@ -24,7 +24,7 @@ Second skill in the gru pipeline. Takes a parent ticket key produced by `write-a
 5. **Fetch graphify**. Run the queries; aggregate the responses into `{modules: [{name, repo}], edges: [{from, to, type}]}`; save as a fixture.
 6. **Render slice plan**. Re-run `propose_slices.py --parent-fixture ... --graphify-fixture ...`. Writes `redlines/PLTPM-XXXXX.md` and prints a JSON summary.
 7. **Review checkpoint**. Open `redlines/PLTPM-XXXXX.md`. Drop slices, reorder, edit `depends_on:`, and **fill in the acceptance criteria** for every slice. The literal `TODO` placeholder must be removed before step 8 will succeed.
-8. **Plan children**. Run `scripts/write_jira_children.py --slice-plan redlines/PLTPM-XXXXX.md --parent-key PLTPM-XXXXX`. Emits a deterministic 4-phase JSON action plan.
+8. **Plan children**. Run `scripts/write_jira_children.py --slice-plan redlines/PLTPM-XXXXX.md --parent-key PLTPM-XXXXX`. Emits a deterministic 4-phase JSON action plan. Every Phase 1 (slice) and Phase 2 (Sub-task) `createJiraIssue` action automatically carries `additional_fields.customfield_12881` (Activity Type) sourced from `.agents/jira-conventions.md`. Override the project default for this PRD via `--activity-type "<value>"` (must match one of the conventions-allowed values). Children inherit the parent's chosen Activity Type unless overridden.
 9. **Execute**. For each action, call the resolved Atlassian MCP tool. Substitute `{{slice_<letter>_key}}` placeholders from previous `createJiraIssue` results. Phases run in order: createIssue per slice → 5 ceremony Sub-tasks per Task/Tech-Story slice → Implement link parent→child → Blocks links per `depends_on:`.
 10. **Cleanup**. Delete `redlines/PLTPM-XXXXX.md`. The redlines directory is gitignored.
 11. **Handoff**. Post the child key list grouped by slice in chat. Recommend running `ai-ready-check` next.
