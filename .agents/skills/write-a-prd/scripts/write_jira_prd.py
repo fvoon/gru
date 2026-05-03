@@ -36,7 +36,7 @@ from pathlib import Path
 # significance_check because it's specific to write-a-prd's heuristic.
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
-_LIB_PATH = SCRIPT_DIR.parent.parent.parent / "_lib"
+_LIB_PATH = SCRIPT_DIR.parent.parent / "_lib"
 if str(_LIB_PATH) not in sys.path:
     sys.path.insert(0, str(_LIB_PATH))
 

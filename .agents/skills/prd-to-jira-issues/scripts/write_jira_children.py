@@ -222,18 +222,23 @@ def emit_actions(slices: list[dict], parent_key: str) -> list[dict]:
             purpose=f"Create slice {letter} as a {s['type']} child of {parent_key}.",
         )
 
-    # Phase 2: 5 ceremony Sub-tasks per Task/Technical Story slice
+    # Phase 2: 5 ceremony Sub-tasks per Task/Technical Story slice.
+    # The Atlassian MCP exposes no `createJiraSubtask` tool — sub-tasks are
+    # created via `createJiraIssue` with `issueType="Sub-task"` and a
+    # top-level `parent` field set to the parent slice's stored key.
     for s in slices:
         if s["type"] not in SUBTASK_TYPES:
             continue
         letter = s["letter"]
         for subtask_name in CEREMONY_SUBTASKS:
             add(
-                "atlassian.createJiraSubtask",
+                "atlassian.createJiraIssue",
                 {
-                    "parentIssueKey": _slice_key_token(letter),
+                    "projectKey": project_key,
+                    "issueType": "Sub-task",
                     "summary": subtask_name,
                     "description": "",
+                    "parent": _slice_key_token(letter),
                 },
                 purpose=(
                     f"Ceremony Sub-task for slice {letter} "

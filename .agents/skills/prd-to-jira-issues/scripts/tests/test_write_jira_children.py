@@ -16,6 +16,31 @@ import write_jira_children as wjc
 # ----- helpers -----
 
 
+def _subtask_actions(actions: list[dict]) -> list[dict]:
+    """Phase-2 ceremony Sub-task actions.
+
+    `atlassian.createJiraSubtask` doesn't exist on the MCP — the action plan
+    emits `atlassian.createJiraIssue` with `issueType="Sub-task"` and a
+    top-level `parent` field instead.
+    """
+    return [
+        a
+        for a in actions
+        if a["tool"] == "atlassian.createJiraIssue"
+        and a["args"].get("issueType") == "Sub-task"
+    ]
+
+
+def _slice_create_actions(actions: list[dict]) -> list[dict]:
+    """Phase-1 slice-creation actions (everything that is NOT a Sub-task)."""
+    return [
+        a
+        for a in actions
+        if a["tool"] == "atlassian.createJiraIssue"
+        and a["args"].get("issueType") != "Sub-task"
+    ]
+
+
 def _slice_block(
     letter: str,
     *,
@@ -211,7 +236,7 @@ class TestEmitActions:
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
 
-        create_issues = [a for a in actions if a["tool"] == "atlassian.createJiraIssue"]
+        create_issues = _slice_create_actions(actions)
         assert len(create_issues) == 2
         assert create_issues[0]["stores_as"] == "slice_A_key"
         assert create_issues[1]["stores_as"] == "slice_B_key"
@@ -224,7 +249,7 @@ class TestEmitActions:
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
 
-        subtasks = [a for a in actions if a["tool"] == "atlassian.createJiraSubtask"]
+        subtasks = _subtask_actions(actions)
         assert len(subtasks) == 5
         names = [a["args"]["summary"] for a in subtasks]
         assert names == [
@@ -235,48 +260,57 @@ class TestEmitActions:
             "Test case execution",
         ]
         assert all(a["args"]["description"] == "" for a in subtasks)
-        assert all(a["args"]["parentIssueKey"] == "{{slice_A_key}}" for a in subtasks)
+        assert all(a["args"]["parent"] == "{{slice_A_key}}" for a in subtasks)
+        assert all(a["args"]["projectKey"] == "PLTPM" for a in subtasks)
+        assert all(a["args"]["issueType"] == "Sub-task" for a in subtasks)
+        assert all(a["tool"] == "atlassian.createJiraIssue" for a in subtasks)
+
+    def test_phase2_never_emits_nonexistent_createJiraSubtask_tool(self):
+        """createJiraSubtask doesn't exist on the Atlassian MCP. Regression for F1 friction 9."""
+        doc = _plan_doc(_slice_block("A"), _slice_block("B"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(slices, "PLTPM-99001")
+        assert all(a["tool"] != "atlassian.createJiraSubtask" for a in actions)
 
     def test_phase2_skips_subtasks_for_research_slice(self):
         doc = _plan_doc(_slice_block("A", type_="Research"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
 
-        assert all(a["tool"] != "atlassian.createJiraSubtask" for a in actions)
+        assert _subtask_actions(actions) == []
 
     def test_phase2_skips_subtasks_for_design_slice(self):
         doc = _plan_doc(_slice_block("A", type_="Design"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
-        assert all(a["tool"] != "atlassian.createJiraSubtask" for a in actions)
+        assert _subtask_actions(actions) == []
 
     def test_emits_trailing_space_for_research_in_action_plan(self):
         doc = _plan_doc(_slice_block("A", type_="Research"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
-        create = next(a for a in actions if a["tool"] == "atlassian.createJiraIssue")
+        create = _slice_create_actions(actions)[0]
         assert create["args"]["issueType"] == "Research "
 
     def test_emits_trailing_space_for_design_in_action_plan(self):
         doc = _plan_doc(_slice_block("A", type_="Design"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
-        create = next(a for a in actions if a["tool"] == "atlassian.createJiraIssue")
+        create = _slice_create_actions(actions)[0]
         assert create["args"]["issueType"] == "Design "
 
     def test_does_not_append_trailing_space_for_task(self):
         doc = _plan_doc(_slice_block("A", type_="Task"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
-        create = next(a for a in actions if a["tool"] == "atlassian.createJiraIssue")
+        create = _slice_create_actions(actions)[0]
         assert create["args"]["issueType"] == "Task"
 
     def test_phase2_emits_subtasks_for_technical_story(self):
         doc = _plan_doc(_slice_block("A", type_="Technical Story"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
-        subtasks = [a for a in actions if a["tool"] == "atlassian.createJiraSubtask"]
-        assert len(subtasks) == 5
+        assert len(_subtask_actions(actions)) == 5
 
     def test_phase3_implement_link_parent_to_each_child(self):
         doc = _plan_doc(_slice_block("A"), _slice_block("B"))
@@ -338,15 +372,11 @@ class TestEmitActions:
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
 
-        last_create_issue = max(
-            i for i, a in enumerate(actions) if a["tool"] == "atlassian.createJiraIssue"
-        )
-        first_subtask = min(
-            i for i, a in enumerate(actions) if a["tool"] == "atlassian.createJiraSubtask"
-        )
-        last_subtask = max(
-            i for i, a in enumerate(actions) if a["tool"] == "atlassian.createJiraSubtask"
-        )
+        is_slice_create = {id(a) for a in _slice_create_actions(actions)}
+        is_subtask = {id(a) for a in _subtask_actions(actions)}
+        last_create_issue = max(i for i, a in enumerate(actions) if id(a) in is_slice_create)
+        first_subtask = min(i for i, a in enumerate(actions) if id(a) in is_subtask)
+        last_subtask = max(i for i, a in enumerate(actions) if id(a) in is_subtask)
         first_implement = min(
             i for i, a in enumerate(actions)
             if a["tool"] == "atlassian.createIssueLink" and a["args"]["type"] == "Implement"

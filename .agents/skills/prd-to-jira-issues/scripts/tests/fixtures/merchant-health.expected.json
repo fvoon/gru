@@ -25,51 +25,61 @@
     },
     {
       "step": 2,
-      "tool": "atlassian.createJiraSubtask",
+      "tool": "atlassian.createJiraIssue",
       "args": {
-        "parentIssueKey": "{{slice_A_key}}",
+        "projectKey": "PLTPM",
+        "issueType": "Sub-task",
         "summary": "Development",
-        "description": ""
+        "description": "",
+        "parent": "{{slice_A_key}}"
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
     {
       "step": 3,
-      "tool": "atlassian.createJiraSubtask",
+      "tool": "atlassian.createJiraIssue",
       "args": {
-        "parentIssueKey": "{{slice_A_key}}",
+        "projectKey": "PLTPM",
+        "issueType": "Sub-task",
         "summary": "Code Review 1",
-        "description": ""
+        "description": "",
+        "parent": "{{slice_A_key}}"
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
     {
       "step": 4,
-      "tool": "atlassian.createJiraSubtask",
+      "tool": "atlassian.createJiraIssue",
       "args": {
-        "parentIssueKey": "{{slice_A_key}}",
+        "projectKey": "PLTPM",
+        "issueType": "Sub-task",
         "summary": "Code Review 2",
-        "description": ""
+        "description": "",
+        "parent": "{{slice_A_key}}"
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
     {
       "step": 5,
-      "tool": "atlassian.createJiraSubtask",
+      "tool": "atlassian.createJiraIssue",
       "args": {
-        "parentIssueKey": "{{slice_A_key}}",
+        "projectKey": "PLTPM",
+        "issueType": "Sub-task",
         "summary": "Test case creation",
-        "description": ""
+        "description": "",
+        "parent": "{{slice_A_key}}"
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },
     {
       "step": 6,
-      "tool": "atlassian.createJiraSubtask",
+      "tool": "atlassian.createJiraIssue",
       "args": {
-        "parentIssueKey": "{{slice_A_key}}",
+        "projectKey": "PLTPM",
+        "issueType": "Sub-task",
         "summary": "Test case execution",
-        "description": ""
+        "description": "",
+        "parent": "{{slice_A_key}}"
       },
       "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
     },

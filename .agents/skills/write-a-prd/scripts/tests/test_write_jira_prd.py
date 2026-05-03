@@ -17,6 +17,7 @@ SCRIPT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from write_jira_prd import (  # noqa: E402
+    _LIB_PATH,
     CANONICAL_COMPONENTS,
     CONFLUENCE_PLACEHOLDER,
     REQUIRED_SECTIONS,
@@ -33,6 +34,36 @@ from write_jira_prd import (  # noqa: E402
     plan,
     truncate_summary,
 )
+
+# ---------- module bootstrap ----------
+
+
+class TestLibPathResolution:
+    """Regression tests for the F1 friction-3 path bug.
+
+    `_LIB_PATH` must resolve to the actual `.agents/skills/_lib` directory
+    so a direct `python write_jira_prd.py` invocation can import
+    `markdown.py` without a PYTHONPATH workaround. Pytest happens to mask
+    the bug because `significance_check.py` (which derives `_LIB_PATH`
+    correctly) is usually imported first into the same process and adds
+    the right path to `sys.path`.
+    """
+
+    def test_lib_path_points_to_an_existing_directory(self):
+        assert _LIB_PATH.is_dir(), (
+            f"_LIB_PATH {_LIB_PATH!r} does not exist; check the .parent count "
+            f"in write_jira_prd.py"
+        )
+
+    def test_lib_path_contains_markdown_module(self):
+        assert (_LIB_PATH / "markdown.py").is_file(), (
+            f"_LIB_PATH {_LIB_PATH!r} exists but is missing markdown.py"
+        )
+
+    def test_lib_path_resolves_to_canonical_skills_lib_dir(self):
+        assert _LIB_PATH.name == "_lib"
+        assert _LIB_PATH.parent.name == "skills"
+
 
 # ---------- helpers ----------
 
