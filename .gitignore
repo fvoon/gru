@@ -62,3 +62,6 @@ tmp/
 .agents/skills/_lib/.venv/
 .agents/skills/_lib/uv.lock
 .agents/skills/_lib/tests/__pycache__/
+
+# Claude Code per-user permissions (shared baseline lives in .claude/settings.json)
+.claude/settings.local.json
