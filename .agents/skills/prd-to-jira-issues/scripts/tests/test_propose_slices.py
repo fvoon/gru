@@ -65,6 +65,21 @@ class TestParseCrossAppBullets:
     def test_empty_section_yields_no_bullets(self):
         assert ps.parse_cross_app_bullets("") == []
 
+    @pytest.mark.parametrize("marker", ["-", "*", "+"])
+    def test_accepts_all_commonmark_bullet_markers(self, marker):
+        body = f"{marker} payment-platform: extend ProcessorHealthClient."
+        assert ps.parse_cross_app_bullets(body) == [
+            ("payment-platform", "extend ProcessorHealthClient.")
+        ]
+
+    def test_accepts_atlassian_round_tripped_asterisk_bullets(self):
+        body = (
+            "* walletapi: add dependency.\n"
+            "* infrastructure: provision KMS key.\n"
+        )
+        result = ps.parse_cross_app_bullets(body)
+        assert [r[0] for r in result] == ["walletapi", "infrastructure"]
+
 
 # ----- user story indices -----
 

@@ -60,7 +60,7 @@ CANONICAL_COMPONENTS = (
 
 # Canonical-repo bullet under `## Cross-Application Impact`. The repo name is
 # what comes before the first colon; the rest is the slice one-liner.
-_CROSS_APP_BULLET_RE = re.compile(r"^-\s+([\w.\-/]+)\s*:\s*(.+?)\s*$", re.MULTILINE)
+_CROSS_APP_BULLET_RE = re.compile(r"^[-*+]\s+([\w.\-/]+)\s*:\s*(.+?)\s*$", re.MULTILINE)
 
 # Lenient research/design markers. The `re.IGNORECASE` is intentional — PM
 # drafts vary in casing.
