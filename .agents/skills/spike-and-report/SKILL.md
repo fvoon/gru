@@ -11,7 +11,7 @@ Third skill in the gru pipeline. Picks up a `Research`-typed Jira ticket, create
 
 1. **Invoke**: "use the spike-and-report skill on PLTPM-XXXXX".
 2. **Success looks like**: a Confluence page URL posted in chat, the same URL commented on the Research ticket, and the ticket transitioned to Done. Worktree(s) are left in place; cleanup commands are in `SPIKE_README.md` inside each.
-3. **Precondition**: Atlassian MCP, graphify MCP, and a `Research`-typed Jira ticket already exist. `.agents/jira-conventions.md` must have the `## Confluence` section bootstrapped (real space id + Spikes parent page id, not `<TBA — bootstrap>`).
+3. **Precondition**: Atlassian MCP and a `Research`-typed Jira ticket already exist. `.agents/jira-conventions.md` must have the `## Confluence` section bootstrapped (real space id + Spikes parent page id, not `<TBA — bootstrap>`). Graphify queries are served by the `_lib/graphify.py` harness helper — see "Harness helpers" in gru's `AGENTS.md`. No standalone graphify MCP is required.
 
 ## Workflow
 

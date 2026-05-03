@@ -54,4 +54,11 @@ tmp/
 .agents/skills/*/scripts/*.egg-info/
 .agents/skills/*/scripts/.pytest_cache/
 .agents/skills/*/scripts/.ruff_cache/
+.agents/skills/*/scripts/.venv/
+.agents/skills/*/scripts/uv.lock
 .agents/skills/_lib/__pycache__/
+.agents/skills/_lib/.pytest_cache/
+.agents/skills/_lib/.ruff_cache/
+.agents/skills/_lib/.venv/
+.agents/skills/_lib/uv.lock
+.agents/skills/_lib/tests/__pycache__/

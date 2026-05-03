@@ -1,0 +1,112 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "FundDetails",
+      "file_type": "code",
+      "source_file": "walletapi/src/main/java/com/moneylion/wallet/walletapi/service/fundoption/FundDetails.java",
+      "source_location": "L42",
+      "id": "walletapi_funddetails",
+      "community": 1,
+      "norm_label": "funddetails"
+    },
+    {
+      "label": "FundOption",
+      "file_type": "code",
+      "source_file": "walletapi/src/main/java/com/moneylion/wallet/walletapi/service/fundoption/FundOption.java",
+      "source_location": "L20",
+      "id": "walletapi_fundoption",
+      "community": 1,
+      "norm_label": "fundoption"
+    },
+    {
+      "label": "FundOptionRepository",
+      "file_type": "code",
+      "source_file": "walletapi/src/main/java/com/moneylion/wallet/walletapi/service/fundoption/FundOptionRepository.java",
+      "source_location": "L15",
+      "id": "walletapi_fundoptionrepository",
+      "community": 1,
+      "norm_label": "fundoptionrepository"
+    },
+    {
+      "label": "FundACHService",
+      "file_type": "code",
+      "source_file": "walletapi/src/main/java/com/moneylion/wallet/walletapi/service/fundoption/FundACHService.java",
+      "source_location": "L30",
+      "id": "walletapi_fundachservice",
+      "community": 1,
+      "norm_label": "fundachservice"
+    },
+    {
+      "label": "JsonEncryptionConfig",
+      "file_type": "code",
+      "source_file": "walletapi/src/main/java/com/moneylion/wallet/walletapi/config/JsonEncryptionConfig.java",
+      "source_location": "L18",
+      "id": "walletapi_jsonencryptionconfig",
+      "community": 2,
+      "norm_label": "jsonencryptionconfig"
+    },
+    {
+      "label": "EncryptedJsonAttributeConverter",
+      "file_type": "code",
+      "source_file": "spring-boot-starters/encryption-starter/src/main/java/com/moneylion/encryption/EncryptedJsonAttributeConverter.java",
+      "source_location": "L25",
+      "id": "spring_boot_starters_encryptedjsonattributeconverter",
+      "community": 75,
+      "norm_label": "encryptedjsonattributeconverter"
+    },
+    {
+      "label": "HibernateEncryptionConfig",
+      "file_type": "code",
+      "source_file": "spring-boot-starters/encryption-starter/src/main/java/com/moneylion/encryption/HibernateEncryptionConfig.java",
+      "source_location": "L12",
+      "id": "spring_boot_starters_hibernateencryptionconfig",
+      "community": 168,
+      "norm_label": "hibernateencryptionconfig"
+    },
+    {
+      "label": "KmsKey",
+      "file_type": "code",
+      "source_file": "infrastructure/terraform/kms/main.tf",
+      "source_location": "L8",
+      "id": "infrastructure_kmskey",
+      "community": 50,
+      "norm_label": "kmskey"
+    },
+    {
+      "label": "IamGrant",
+      "file_type": "code",
+      "source_file": "infrastructure/terraform/iam/grants.tf",
+      "source_location": "L4",
+      "id": "infrastructure_iamgrant",
+      "community": 50,
+      "norm_label": "iamgrant"
+    },
+    {
+      "label": "UnrelatedHelper",
+      "file_type": "code",
+      "source_file": "walletapi/src/main/java/com/moneylion/wallet/walletapi/util/UnrelatedHelper.java",
+      "source_location": "L10",
+      "id": "walletapi_unrelatedhelper",
+      "community": 99,
+      "norm_label": "unrelatedhelper"
+    }
+  ],
+  "links": [
+    {"relation": "embeds", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_fundoption", "target": "walletapi_funddetails"},
+    {"relation": "manages", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_fundoptionrepository", "target": "walletapi_fundoption"},
+    {"relation": "queries", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_fundoptionrepository", "target": "walletapi_funddetails"},
+    {"relation": "uses", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_fundachservice", "target": "walletapi_fundoptionrepository"},
+    {"relation": "configured-by", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_funddetails", "target": "walletapi_jsonencryptionconfig"},
+    {"relation": "wires", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_jsonencryptionconfig", "target": "spring_boot_starters_encryptedjsonattributeconverter"},
+    {"relation": "back-references", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_jsonencryptionconfig", "target": "walletapi_funddetails"},
+    {"relation": "extends", "confidence": "EXTRACTED", "weight": 1.0, "source": "spring_boot_starters_encryptedjsonattributeconverter", "target": "spring_boot_starters_hibernateencryptionconfig"},
+    {"relation": "binds-to", "confidence": "EXTRACTED", "weight": 1.0, "source": "infrastructure_kmskey", "target": "infrastructure_iamgrant"},
+    {"relation": "configures", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_fundachservice", "target": "walletapi_jsonencryptionconfig"},
+    {"relation": "registers-with", "confidence": "EXTRACTED", "weight": 1.0, "source": "spring_boot_starters_encryptedjsonattributeconverter", "target": "walletapi_jsonencryptionconfig"},
+    {"relation": "uses", "confidence": "EXTRACTED", "weight": 1.0, "source": "walletapi_unrelatedhelper", "target": "walletapi_fundoptionrepository"}
+  ],
+  "hyperedges": []
+}

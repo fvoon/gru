@@ -178,15 +178,17 @@ Per `.agents/jira-conventions.md`:
 - `createIssueLink` — fields needed: `type` (one of `Implement`, `Blocks`), `inwardIssue`, `outwardIssue`. **Directionality**: inward = blocker / parent; outward = blocked / child.
 - `Research ` and `Design ` issue types have a trailing space — the action plan emits them with the space; do not strip whitespace from `args.issueType`.
 
-## graphify MCP call patterns
+## Graphify access (via harness helper)
 
-The script emits a generic three-step plan. Tool names:
+The script emits the same generic three-step action plan it always did; what changed is how the agent resolves it. Each `graphify.<intent>` action translates to a shell exec of `.agents/skills/_lib/graphify.py` (no graphify MCP server is required):
 
-- `graphify.search` — full-text query against module names + descriptions. Pass `text` derived from the parent's `## Implementation Decisions` section.
-- `graphify.get_node` — resolve hit IDs to canonical names + repo metadata. Required for the `modules` array.
-- `graphify.get_edges` — outbound edges per hit. Required for the `edges` array.
+- `graphify.search` → `python _lib/graphify.py search --text "<implementation-decisions text>"` — substring search over node `norm_label` / `label`. Returns `[{id, label, repo, score}, ...]`. Pass `text` derived from the parent's `## Implementation Decisions` section.
+- `graphify.get_node` → `python _lib/graphify.py get_node --id <hit-id>` — returns the node augmented with a derived `repo` field (first path segment of `source_file`). Required for the `modules` array.
+- `graphify.get_edges` → `python _lib/graphify.py get_edges --from-id <hit-id>` — outbound edges only, normalised to `{from, to, type}`. Required for the `edges` array.
 
-Aggregate responses into the `{modules, edges}` shape and pass back via `--graphify-fixture`.
+One-shot convenience (recommended for `propose_slices.py`'s phase-1 → phase-2 handoff): `python _lib/graphify.py aggregate --text "..." [--scope-repos a b ...]` returns the `{modules, edges}` fixture directly. Pass back via `--graphify-fixture`.
+
+Default graph: `~/payments-graph/graphify-out/graph.json` (override via `$GRAPHIFY_GRAPH_JSON`). When no graph.json is reachable, `aggregate` returns `{"status": "needs_synthesis", "reason": ..., "hint": ...}` instead of raising, so the SKILL falls back to PRD-only fixture synthesis (the F1 manual workaround). See "Harness helpers" in gru's `AGENTS.md` for the full helper contract.
 
 ## Idempotency limitation (Issue 5B locked decision)
 

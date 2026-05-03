@@ -11,7 +11,7 @@ Second skill in the gru pipeline. Takes a parent ticket key produced by `write-a
 
 1. **Invoke**: "use the prd-to-jira-issues skill on PLTPM-XXXXX".
 2. **Success looks like**: a list of child Jira keys grouped by slice (`A: PLTPM-XXXXX, B: PLTPM-YYYYY ...`) posted in chat, with ceremony Sub-tasks, Implement links, and `is blocked by` chains in place.
-3. **Precondition**: graphify MCP, Atlassian MCP, and the parent ticket already exist (run `write-a-prd` first if not).
+3. **Precondition**: Atlassian MCP and the parent ticket already exist (run `write-a-prd` first if not). Graphify queries are served by the `_lib/graphify.py` harness helper — see "Harness helpers" in gru's `AGENTS.md`. No standalone graphify MCP is required.
 
 ## Workflow
 

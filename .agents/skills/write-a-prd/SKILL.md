@@ -11,13 +11,13 @@ Entry point of the gru pipeline. The PM says "I want to add X"; this skill ends 
 
 1. **Invoke**: PM asks the agent "use the write-a-prd skill, I want to <feature idea>".
 2. **Success looks like**: a PLTPM Jira key (e.g. `PLTPM-XXXXX`) posted in chat, with the local draft cleaned up.
-3. **Precondition**: graphify MCP and Atlassian MCP are mounted in the runtime.
+3. **Precondition**: Atlassian MCP is mounted in the runtime. Graphify queries are served by the `_lib/graphify.py` harness helper — see "Harness helpers" in gru's `AGENTS.md`. No standalone graphify MCP is required.
 
 ## Workflow
 
 The agent runs these 10 steps in order. Stop and ask the PM for input only at step 5 (review checkpoint) and on `requires_user_choice` from step 8.
 
-1. **Probe**. Query the graphify MCP for concepts / modules likely related to the PM's idea across the 4 canonical repos (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`). Surface the top hits as a "likely affected apps" summary.
+1. **Probe**. Query the `_lib/graphify.py` harness helper for concepts / modules likely related to the PM's idea across the 4 canonical repos (`payment-platform`, `walletapi`, `infrastructure`, `spring-boot-starters`) — typically `python _lib/graphify.py search --text "<idea>"` followed by `get_node` / `get_edges` on the top hits. Surface the top hits as a "likely affected apps" summary. If the helper returns `needs_synthesis` (no `graph.json` reachable), skip directly to step 2 and rely on narrative knowledge.
 2. **Narrate**. Read matching files under `gru/knowledge/narrative/` on demand (`flows/<flow>.md`, `glossary.md`, `repos/<repo>.md`). Use these to anchor the interview, not as a script.
 3. **Interview**. Ask the PM section-by-section for the 8 sections (see [REFERENCE.md](REFERENCE.md) for the template). Pre-fill graphify findings and let the PM confirm / correct.
 4. **Append**. Write each section to `drafts/<slug>.md` as it stabilises. Slug = kebab-case of the working title. The drafts directory is gitignored.

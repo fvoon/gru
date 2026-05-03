@@ -218,15 +218,20 @@ For controlled overwrites of a previously-published spike page (e.g. the enginee
 
 This intentionally does NOT bypass the redline + TODO-free gates. Re-publish flows still go through the same review checkpoint.
 
-## graphify MCP call patterns
+## Graphify access (via harness helper)
 
-Same generic three-step plan as `prd-to-jira-issues` but scoped to the user-selected repos:
+Same generic three-step action plan as `prd-to-jira-issues`, served by `.agents/skills/_lib/graphify.py` (no graphify MCP server required). Difference here: scope-by-repo carries the `--repos` selection through to the helper:
 
-- `graphify.search` — full-text query derived from the Research ticket's question. `args.scope.repos` carries the `--repos` selection.
-- `graphify.get_node` — resolve hit IDs to canonical names + repo metadata. Required for the `nodes` array.
-- `graphify.get_edges` — outbound edges per hit. Required for the `edges` array.
+- `graphify.search` → `python _lib/graphify.py search --text "<research-question>" --scope-repos <selected-repos>`
+- `graphify.get_node` → `python _lib/graphify.py get_node --id <hit-id>`
+- `graphify.get_edges` → `python _lib/graphify.py get_edges --from-id <hit-id>`
 
-Aggregate into `{nodes, edges, communities}` and pass back via `--graphify-fixture`.
+**Aggregation shape mismatch (open follow-up):** the helper's `aggregate` subcommand currently returns the `{modules, edges}` shape used by `prd-to-jira-issues`. Spike fixtures need `{nodes, edges, communities}`. Until the helper grows a `--shape spike` flag (or a separate `aggregate_for_spike` mode), the agent should:
+1. Call `python _lib/graphify.py aggregate --text "..." --scope-repos <selected-repos>` to get `{modules, edges}` (or fall through `needs_synthesis`).
+2. Treat each `modules[i]` as a `nodes[i]` (rename the field).
+3. Synthesise `communities` from the PRD's named clusters (e.g. one community per affected repo, or per `Cross-Application Impact` bullet group). Document the synthesis in the spike report's metadata footer.
+
+Default graph + `$GRAPHIFY_GRAPH_JSON` override + `needs_synthesis` fallback contract are documented under "Harness helpers" in gru's `AGENTS.md`.
 
 ## Atlassian MCP call patterns
 

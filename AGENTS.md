@@ -60,3 +60,16 @@ All skills under `.agents/skills/` follow the AI Hero [write-a-skill](https://gi
 - Keep `docs/plan.md` in sync. If a code/skill change implies a plan change, update the plan in the same commit.
 - Symlinks `.cursor/skills` and `.claude/skills` are authoritative pointers — never duplicate skill content into either directory; always edit the canonical `.agents/skills/<name>/`.
 - Treat `~/payments-graph/` and the four product repos as **read-only** from gru's perspective. gru produces Jira tickets and Confluence pages; it does not write files outside its own workspace.
+
+### Harness helpers
+
+`.agents/skills/_lib/` holds shared Python helpers that gate scripts and the agent both call. Pure stdlib (no third-party deps), `__main__` CLI for shell-out, tests under `_lib/tests/`.
+
+- **`markdown.py`** — section parser for PRD bodies (used by `validate_parent.py`, `propose_slices.py`, `write_jira_prd.py`).
+- **`graphify.py`** — substring search + node/edge access against `graph.json`. Resolves `graphify.search` / `graphify.get_node` / `graphify.get_edges` action-plan tools without a separate MCP server. Each `graphify.<intent>` action emitted by a gate script translates 1:1 to a shell exec of this helper.
+  - **Resolution order for `graph.json`**: explicit `--graph` flag > `$GRAPHIFY_GRAPH_JSON` env var > `~/payments-graph/graphify-out/graph.json` (default).
+  - **Public Python API**: `search(text, *, limit=20, scope_repos=None, graph_path=None)`, `get_node(node_id, *, graph_path=None)`, `get_edges(from_id, *, graph_path=None)`, `aggregate(text, *, limit=20, scope_repos=None, graph_path=None)`.
+  - **CLI**: `python _lib/graphify.py {search|get_node|get_edges|aggregate} [args]` — JSON to stdout; exit 0 on success, exit 2 on `GraphifyUnavailable` (for the lower-level intents).
+  - **Fallback contract**: when no `graph.json` is reachable, `aggregate` returns `{"status": "needs_synthesis", "reason": ..., "hint": ...}` instead of raising, so the calling skill can fall back to PRD-only fixture synthesis (the F1 manual workaround). The lower-level `search` / `get_node` / `get_edges` raise `GraphifyUnavailable` for callers that want hard-fail behaviour.
+  - **Tests**: `cd .agents/skills/_lib && uv run --extra dev pytest tests/`.
+  - **Aggregation shape**: `aggregate` currently returns `{modules, edges}` (matches `prd-to-jira-issues`). `spike-and-report` needs `{nodes, edges, communities}` — the agent renames `modules` → `nodes` and synthesises `communities` from the PRD's named clusters until the helper grows a `--shape spike` flag.

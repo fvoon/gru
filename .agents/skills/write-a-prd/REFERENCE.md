@@ -4,7 +4,7 @@ Detailed reference for the agent and for engineers maintaining the skill. Read t
 
 - you need the full PRD template (including the gru-specific additions);
 - you need the JSON action-plan contract for one of the 3 scripts;
-- you need example graphify MCP queries for the up-front probe or on-demand follow-ups;
+- you need example graphify helper queries for the up-front probe or on-demand follow-ups;
 - you need the Atlassian MCP tool-name mapping for the action plans.
 
 ## PRD template
@@ -93,9 +93,9 @@ Implemented in `write_jira_prd.detect_components`. Bullet prefixes in `## Cross-
 - **1 canonical repo** → `primary_component` set; plan ready.
 - **2+ canonical repos** → `requires_user_choice` set; `actions` is empty. The agent must ask the PM which repo "owns" the parent and re-invoke (today: edit the draft to keep one canonical bullet; future: `--primary-component` flag).
 
-## graphify MCP recipes
+## Graphify access recipes
 
-The graphify MCP server is mounted from `~/payments-graph/graphify-out/` (or wherever `setup-graphify.sh` placed it). It exposes nodes per concept / module / file across the 4 canonical repos.
+Graphify queries are served by `.agents/skills/_lib/graphify.py`, which reads `graph.json` directly (`~/payments-graph/graphify-out/graph.json` by default; override via `$GRAPHIFY_GRAPH_JSON`). It exposes nodes per concept / module / file across the 4 canonical repos. No standalone MCP server is required.
 
 ### Up-front affected-apps probe
 
@@ -128,7 +128,12 @@ get_node_details(id=<module-id>)
   → use to populate Cross-App Impact bullets accurately
 ```
 
-The graphify MCP tool names vary by mount; the agent translates the semantic intents above to whatever the runtime exposes (commonly `graphify.search`, `graphify.get_node`, `graphify.get_edges`).
+The agent resolves these semantic intents via the `.agents/skills/_lib/graphify.py` harness helper (no graphify MCP server required). Mapping:
+
+- `search_concepts(query, limit)` → `python _lib/graphify.py search --text "<query>" --limit <N>`
+- `get_node_details(id)` → `python _lib/graphify.py get_node --id <id>` followed by `get_edges --from-id <id>` for the edge list.
+
+Default graph: `~/payments-graph/graphify-out/graph.json` (override via `$GRAPHIFY_GRAPH_JSON`). When no `graph.json` is reachable, the higher-level `aggregate` subcommand returns `{"status": "needs_synthesis", ...}` and the SKILL falls back to narrative-knowledge probing (read `gru/knowledge/narrative/`); the lower-level intents above raise `GraphifyUnavailable` so the agent can detect the gap explicitly. See "Harness helpers" in gru's `AGENTS.md`.
 
 ## Action-plan JSON contracts
 

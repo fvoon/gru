@@ -10,9 +10,9 @@ Two end-to-end walkthroughs. Both use the reference drafts in `scripts/tests/fix
 
 **Scenario**: A merchant-support PM wants the processor-health endpoint to surface per-merchant scope, plus a `DEGRADED` status with reason codes. Single repo (`payment-platform`), user-facing actors (merchants, agents, customers), small PRD.
 
-### 1. Probe (graphify MCP)
+### 1. Probe (graphify helper)
 
-The agent searches graphify with the PM's one-liner:
+The agent searches graphify (via the `_lib/graphify.py` harness helper) with the PM's one-liner:
 
 ```text
 graphify.search(query="processor health degraded reason code merchant scope", limit=20)
