@@ -1,5 +1,9 @@
 # gru — Agent Instructions
 
+## Context
+
+gru is an **LLM-agent harness** for PLTPM Jira/Confluence work. The five layers (role, knowledge, tools, deterministic gates, conventions) are documented in the [README's Architecture section](README.md#architecture). When working IN gru, you're extending the harness — not building a feature on top of it. Skills are the role layer; Python scripts are the gate layer; action-plan JSON is the handoff between them.
+
 ## Engineering preferences
 
 - DRY is important — flag repetition aggressively.

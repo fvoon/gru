@@ -173,6 +173,10 @@ flowchart LR
 - **Jira / Confluence surface**: Atlassian MCP (`plugin-atlassian-atlassian`).
 - **Cross-repo handling**: 1 child ticket = 1 Component = 1 future PR. Cross-app features become per-repo sibling children of the same parent, with `is blocked by` chains representing producer/consumer ordering.
 
+## Architecture
+
+gru is an **LLM-agent harness**; see the [README Architecture section](../README.md#architecture) for the five-layer breakdown (role / knowledge / tools / deterministic gates / conventions). Each numbered todo below extends one or more layers.
+
 ## Pieces to build (todos)
 
 1. `**gru` repo scaffold** — directory layout, symlinks, README + AGENTS.md framing the metaphor, LICENSE, .gitignore, empty `scripts/` placeholder.
