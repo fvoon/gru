@@ -74,7 +74,7 @@ These were discovered live and should already be configured (no admin work expec
 | Child (QA-involved)   | `Technical Story`    | `10707` | Same type as parent; differentiated by hierarchy   |
 | Child (long research) | `Research `          | `10720` | ⚠️ TRAILING SPACE in name — use exactly            |
 | Child (design work)   | `Design `            | `10747` | ⚠️ TRAILING SPACE in name — use exactly            |
-| Sub-task              | `Sub-task`           | `5`     | The 5 ceremony Sub-tasks                           |
+| Sub-task              | `Sub-task`           | `5`     | Created by PLTPM Jira automation, NOT by gru — see "Ceremony Sub-tasks" |
 
 Avoid for gru-driven flow:
 
@@ -107,6 +107,7 @@ Avoid for gru-driven flow:
   - Allowed: `New feature`, `Bug fix`, `Customer excellence`, `Engineering excellence`, `Ship & Learn`, `Others`
   - Applies to: `Story`, `Technical Story`, `Task`, `Sub-task`, `Research `, `Design `
   - Wire shape: `object`
+  - Note on `Sub-task`: gru no longer creates Sub-tasks (PLTPM Jira automation does — see "Ceremony Sub-tasks"), but `Sub-task` is kept in `applies_to` so the conventions file remains the source of truth for what PLTPM requires on any hand-created Sub-task. The injection is a no-op for gru since no `createJiraIssue(Sub-task)` actions are emitted.
 
 Notes (informational; the parser does not consume these):
 
@@ -250,7 +251,7 @@ Other labels in PLTPM (e.g., team labels, release labels) are owned by humans / 
 
 ## Ceremony Sub-tasks
 
-When creating a child issue of type `Task` or `Technical Story`, gru auto-creates exactly these 5 Sub-tasks under it (verified against PLTPM-21031, -21032, -20920, -20921, -20922):
+**PLTPM has a project-level Jira automation rule** that auto-creates exactly these 5 Sub-tasks on every `Task` / `Technical Story` creation:
 
 1. `Development`
 2. `Code Review 1`
@@ -258,9 +259,11 @@ When creating a child issue of type `Task` or `Technical Story`, gru auto-create
 4. `Test case creation`
 5. `Test case execution`
 
-Sub-tasks are created with empty descriptions and no assignee. Field defaults inherited from the parent.
+**gru never creates these — it relies on the PLTPM automation.** Verified against pre-existing PLTPM-21031, -21032, -20920, -20921, -20922 (which gru never touched yet carry the 5 sub-tasks), and against the F1+F2 demo aftermath (`prd-to-jira-issues`'s old Phase 2 emission duplicated the automation output, leaving 10 sub-tasks per parent until manual cleanup; see the F2 retro Issue R in `docs/demos/2026-05-03-encryption-and-cybersource.md`).
 
-Children of type `Research ` and `Design ` do NOT get ceremony Sub-tasks (no QA loop).
+The automation creates Sub-tasks with empty descriptions and no assignee. Field defaults inherit from the parent. The automation does NOT fire for `Research ` / `Design ` — those issue types do not receive ceremony Sub-tasks (no QA loop), which matches gru's slicing heuristics.
+
+If a future skill needs to create a Sub-task by hand (rare), do so via `atlassian.createJiraIssue` with `issueType="Sub-task"` and a top-level `parent` field (the Atlassian MCP exposes no `createJiraSubtask` tool); inject `customfield_12881` per "Required custom fields (PLTPM)".
 
 ## Title conventions
 

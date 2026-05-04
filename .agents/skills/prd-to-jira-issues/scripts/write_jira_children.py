@@ -1,16 +1,19 @@
 """Convert a redlined slice plan into a deterministic Jira write action plan.
 
 Reads `redlines/<parent-key>.md` (after PM/eng has filled in acceptance criteria
-and any other edits) and emits a JSON action plan in 4 deterministic phases:
+and any other edits) and emits a JSON action plan in 3 deterministic phases:
 
   1. createJiraIssue per slice, in alphabetic letter order.
-  2. createJiraSubtask × 5 per Task / Technical Story slice
-     (`Development`, `Code Review 1`, `Code Review 2`, `Test case creation`,
-     `Test case execution`). Research / Design slices skip Sub-tasks.
-  3. createIssueLink type `Implement`, parent → each child.
-  4. createIssueLink type `Blocks` for each `depends_on:` reference, inward =
+  2. createIssueLink type `Implement`, parent → each child.
+  3. createIssueLink type `Blocks` for each `depends_on:` reference, inward =
      blocker, outward = blocked (per .agents/jira-conventions.md "createIssueLink
      directionality").
+
+The 5 ceremony Sub-tasks (`Development`, `Code Review 1`, `Code Review 2`,
+`Test case creation`, `Test case execution`) are NOT emitted here — PLTPM has
+a project-level Jira automation rule that creates them on every Task /
+Technical Story creation. Emitting them from gru duplicated the automation
+output (see .agents/jira-conventions.md "Ceremony Sub-tasks").
 
 Validation gates (any failure → exit 1):
 - Each slice has `type`, `title`, `component`, `depends_on`, `description`.
@@ -86,16 +89,7 @@ CANONICAL_COMPONENTS = (
 # emission time because Atlassian's issuetype names require it (see
 # .agents/jira-conventions.md, line 45-46).
 ALLOWED_TYPES = frozenset({"Task", "Technical Story", "Research", "Design"})
-SUBTASK_TYPES = frozenset({"Task", "Technical Story"})
 _NEEDS_TRAILING_SPACE = frozenset({"Research", "Design"})
-
-CEREMONY_SUBTASKS = (
-    "Development",
-    "Code Review 1",
-    "Code Review 2",
-    "Test case creation",
-    "Test case execution",
-)
 
 REQUIRED_KEYS = ("type", "title", "component", "depends_on", "description")
 
@@ -224,14 +218,17 @@ def emit_actions(
     required_fields: Mapping[str, FieldSpec] | None = None,
     activity_type_override: str | None = None,
 ) -> list[dict]:
-    """Build the deterministic 4-phase action sequence.
+    """Build the deterministic 3-phase action sequence.
 
     Required-fields injection: every `atlassian.createJiraIssue` action
-    (Phase 1 slice creates AND Phase 2 ceremony Sub-tasks) gets
-    `additional_fields.<customfield_id>` populated from `required_fields`.
-    `required_fields=None` means parse `.agents/jira-conventions.md`;
-    pass `{}` to skip injection (used by tests that don't care).
-    `activity_type_override` is a convenience shortcut for `customfield_12881`.
+    (Phase 1 slice creates) gets `additional_fields.<customfield_id>`
+    populated from `required_fields`. `required_fields=None` means parse
+    `.agents/jira-conventions.md`; pass `{}` to skip injection (used by
+    tests that don't care). `activity_type_override` is a convenience
+    shortcut for `customfield_12881`.
+
+    Ceremony Sub-tasks are NOT emitted: PLTPM's Jira automation creates
+    them on Task/Technical Story creation. See module docstring.
 
     Raises InvalidSlicePlan when injection rejects an override (typo guard
     or value not in the conventions allowed list).
@@ -289,34 +286,7 @@ def emit_actions(
             purpose=f"Create slice {letter} as a {s['type']} child of {parent_key}.",
         )
 
-    # Phase 2: 5 ceremony Sub-tasks per Task/Technical Story slice.
-    # The Atlassian MCP exposes no `createJiraSubtask` tool — sub-tasks are
-    # created via `createJiraIssue` with `issueType="Sub-task"` and a
-    # top-level `parent` field set to the parent slice's stored key.
-    for s in slices:
-        if s["type"] not in SUBTASK_TYPES:
-            continue
-        letter = s["letter"]
-        for subtask_name in CEREMONY_SUBTASKS:
-            add(
-                "atlassian.createJiraIssue",
-                _inject(
-                    {
-                        "projectKey": project_key,
-                        "issueType": "Sub-task",
-                        "summary": subtask_name,
-                        "description": "",
-                        "parent": _slice_key_token(letter),
-                    },
-                    "Sub-task",
-                ),
-                purpose=(
-                    f"Ceremony Sub-task for slice {letter} "
-                    f"(per .agents/jira-conventions.md)."
-                ),
-            )
-
-    # Phase 3: Implement link parent → each child
+    # Phase 2: Implement link parent → each child
     for s in slices:
         letter = s["letter"]
         add(
@@ -329,7 +299,7 @@ def emit_actions(
             purpose=f"Mark slice {letter} as implementing {parent_key}.",
         )
 
-    # Phase 4: is-blocked-by chains. type=Blocks, inward=blocker, outward=blocked.
+    # Phase 3: is-blocked-by chains. type=Blocks, inward=blocker, outward=blocked.
     # `depends_on: A` on slice X means X is blocked by A → A is the blocker.
     for s in slices:
         blocked_letter = s["letter"]
@@ -391,8 +361,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "Override the default Activity Type (customfield_12881) for every "
-            "createJiraIssue in this plan (slice creates + Sub-tasks). Must be one of "
-            "the values listed in `## Required custom fields (PLTPM)` in "
+            "createJiraIssue in this plan (one per slice). Must be one of the "
+            "values listed in `## Required custom fields (PLTPM)` in "
             ".agents/jira-conventions.md. When omitted, the conventions default is used."
         ),
     )

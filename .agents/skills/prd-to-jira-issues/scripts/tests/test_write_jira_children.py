@@ -39,11 +39,13 @@ _TEST_REQUIRED_FIELDS = _rf.parse_required_fields(
 
 
 def _subtask_actions(actions: list[dict]) -> list[dict]:
-    """Phase-2 ceremony Sub-task actions.
+    """Sub-task createJiraIssue actions.
 
-    `atlassian.createJiraSubtask` doesn't exist on the MCP — the action plan
-    emits `atlassian.createJiraIssue` with `issueType="Sub-task"` and a
-    top-level `parent` field instead.
+    The emitter no longer produces these (PLTPM's Jira automation creates
+    ceremony Sub-tasks on Task/Technical-Story creation; gru's old Phase 2
+    duplicated them — see write_jira_children.py module docstring). The
+    helper is kept for the regression test that asserts this never returns
+    a non-empty list.
     """
     return [
         a
@@ -266,46 +268,37 @@ class TestEmitActions:
         assert create_issues[0]["args"]["issueType"] == "Task"
         assert create_issues[0]["args"]["components"] == [{"name": "payment-platform"}]
 
-    def test_phase2_emits_5_subtasks_per_task(self):
-        doc = _plan_doc(_slice_block("A"))
+    def test_never_emits_subtask_actions_for_task(self):
+        """PLTPM's Jira automation creates ceremony Sub-tasks; gru must not duplicate.
+
+        Regression for F2 retro Issue R: write_jira_children's old Phase 2
+        emitted 5 createJiraIssue(Sub-task) actions per Task/Technical-Story
+        slice, doubling sub-tasks on every parent.
+        """
+        doc = _plan_doc(_slice_block("A", type_="Task"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
+        assert _subtask_actions(actions) == []
 
-        subtasks = _subtask_actions(actions)
-        assert len(subtasks) == 5
-        names = [a["args"]["summary"] for a in subtasks]
-        assert names == [
-            "Development",
-            "Code Review 1",
-            "Code Review 2",
-            "Test case creation",
-            "Test case execution",
-        ]
-        assert all(a["args"]["description"] == "" for a in subtasks)
-        assert all(a["args"]["parent"] == "{{slice_A_key}}" for a in subtasks)
-        assert all(a["args"]["projectKey"] == "PLTPM" for a in subtasks)
-        assert all(a["args"]["issueType"] == "Sub-task" for a in subtasks)
-        assert all(a["tool"] == "atlassian.createJiraIssue" for a in subtasks)
+    def test_never_emits_subtask_actions_for_technical_story(self):
+        doc = _plan_doc(_slice_block("A", type_="Technical Story"))
+        slices = wjc.parse_slice_plan(doc)
+        actions = wjc.emit_actions(slices, "PLTPM-99001")
+        assert _subtask_actions(actions) == []
 
-    def test_phase2_never_emits_nonexistent_createJiraSubtask_tool(self):
+    def test_never_emits_subtask_actions_for_research_or_design(self):
+        for type_ in ("Research", "Design"):
+            doc = _plan_doc(_slice_block("A", type_=type_))
+            slices = wjc.parse_slice_plan(doc)
+            actions = wjc.emit_actions(slices, "PLTPM-99001")
+            assert _subtask_actions(actions) == []
+
+    def test_never_emits_nonexistent_createJiraSubtask_tool(self):
         """createJiraSubtask doesn't exist on the Atlassian MCP. Regression for F1 friction 9."""
         doc = _plan_doc(_slice_block("A"), _slice_block("B"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
         assert all(a["tool"] != "atlassian.createJiraSubtask" for a in actions)
-
-    def test_phase2_skips_subtasks_for_research_slice(self):
-        doc = _plan_doc(_slice_block("A", type_="Research"))
-        slices = wjc.parse_slice_plan(doc)
-        actions = wjc.emit_actions(slices, "PLTPM-99001")
-
-        assert _subtask_actions(actions) == []
-
-    def test_phase2_skips_subtasks_for_design_slice(self):
-        doc = _plan_doc(_slice_block("A", type_="Design"))
-        slices = wjc.parse_slice_plan(doc)
-        actions = wjc.emit_actions(slices, "PLTPM-99001")
-        assert _subtask_actions(actions) == []
 
     def test_emits_trailing_space_for_research_in_action_plan(self):
         doc = _plan_doc(_slice_block("A", type_="Research"))
@@ -328,13 +321,7 @@ class TestEmitActions:
         create = _slice_create_actions(actions)[0]
         assert create["args"]["issueType"] == "Task"
 
-    def test_phase2_emits_subtasks_for_technical_story(self):
-        doc = _plan_doc(_slice_block("A", type_="Technical Story"))
-        slices = wjc.parse_slice_plan(doc)
-        actions = wjc.emit_actions(slices, "PLTPM-99001")
-        assert len(_subtask_actions(actions)) == 5
-
-    def test_phase3_implement_link_parent_to_each_child(self):
+    def test_phase2_implement_link_parent_to_each_child(self):
         doc = _plan_doc(_slice_block("A"), _slice_block("B"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
@@ -348,7 +335,7 @@ class TestEmitActions:
         out_keys = sorted(a["args"]["outwardIssue"] for a in implement_links)
         assert out_keys == ["{{slice_A_key}}", "{{slice_B_key}}"]
 
-    def test_phase4_is_blocked_by_directionality(self):
+    def test_phase3_is_blocked_by_directionality(self):
         # B depends on A → A blocks B. inwardIssue=A (blocker), outwardIssue=B (blocked).
         doc = _plan_doc(_slice_block("A"), _slice_block("B", depends_on="A"))
         slices = wjc.parse_slice_plan(doc)
@@ -361,7 +348,7 @@ class TestEmitActions:
         assert blocks[0]["args"]["inwardIssue"] == "{{slice_A_key}}"
         assert blocks[0]["args"]["outwardIssue"] == "{{slice_B_key}}"
 
-    def test_phase4_handles_multiple_depends_on(self):
+    def test_phase3_handles_multiple_depends_on(self):
         doc = _plan_doc(
             _slice_block("A"),
             _slice_block("B"),
@@ -378,7 +365,7 @@ class TestEmitActions:
         assert in_letters == ["{{slice_A_key}}", "{{slice_B_key}}"]
         assert all(a["args"]["outwardIssue"] == "{{slice_C_key}}" for a in blocks)
 
-    def test_phase4_no_blocks_when_no_depends_on(self):
+    def test_phase3_no_blocks_when_no_depends_on(self):
         doc = _plan_doc(_slice_block("A"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
@@ -388,17 +375,14 @@ class TestEmitActions:
         ]
         assert blocks == []
 
-    def test_4_phase_ordering(self):
-        # createIssue → subtasks → Implement → Blocks
+    def test_3_phase_ordering(self):
+        # createIssue → Implement → Blocks (no Sub-tasks; PLTPM automation handles those)
         doc = _plan_doc(_slice_block("A"), _slice_block("B", depends_on="A"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001")
 
         is_slice_create = {id(a) for a in _slice_create_actions(actions)}
-        is_subtask = {id(a) for a in _subtask_actions(actions)}
         last_create_issue = max(i for i, a in enumerate(actions) if id(a) in is_slice_create)
-        first_subtask = min(i for i, a in enumerate(actions) if id(a) in is_subtask)
-        last_subtask = max(i for i, a in enumerate(actions) if id(a) in is_subtask)
         first_implement = min(
             i for i, a in enumerate(actions)
             if a["tool"] == "atlassian.createIssueLink" and a["args"]["type"] == "Implement"
@@ -412,8 +396,7 @@ class TestEmitActions:
             if a["tool"] == "atlassian.createIssueLink" and a["args"]["type"] == "Blocks"
         )
 
-        assert last_create_issue < first_subtask
-        assert last_subtask < first_implement
+        assert last_create_issue < first_implement
         assert last_implement < first_blocks
 
     def test_steps_are_consecutive_and_one_indexed(self):
@@ -428,10 +411,12 @@ class TestEmitActions:
 
 
 class TestRequiredFieldsInjection:
-    """Every `atlassian.createJiraIssue` action -- both Phase 1 (slice creates)
-    and Phase 2 (Sub-task creates) -- must inject the conventions-declared
-    required customfields. Without injection the agent eats one HTTP 400 per
-    create attempt (12 retries on the F1 demo if not pre-empted).
+    """Every `atlassian.createJiraIssue` action (Phase 1 slice creates) must
+    inject the conventions-declared required customfields. Without injection
+    the agent eats one HTTP 400 per create attempt.
+
+    Sub-tasks are no longer emitted (PLTPM automation handles them) so the
+    historical Phase 2 injection arc is gone.
     """
 
     def test_phase1_create_issue_carries_default_activity_type(self):
@@ -444,19 +429,6 @@ class TestRequiredFieldsInjection:
         assert creates[0]["args"]["additional_fields"] == {
             "customfield_12881": {"value": "Engineering excellence"}
         }
-
-    def test_phase2_subtasks_carry_default_activity_type(self):
-        doc = _plan_doc(_slice_block("A"))
-        slices = wjc.parse_slice_plan(doc)
-        actions = wjc.emit_actions(
-            slices, "PLTPM-99001", required_fields=_TEST_REQUIRED_FIELDS
-        )
-        subtasks = _subtask_actions(actions)
-        assert len(subtasks) == 5
-        for s in subtasks:
-            assert s["args"]["additional_fields"] == {
-                "customfield_12881": {"value": "Engineering excellence"}
-            }
 
     def test_research_slice_creates_carry_activity_type(self):
         """Research/Design issue types must also receive the customfield
@@ -483,10 +455,11 @@ class TestRequiredFieldsInjection:
             if a["tool"] == "atlassian.createIssueLink":
                 assert "additional_fields" not in a["args"]
 
-    def test_override_propagates_to_phase1_and_phase2(self):
-        """An override on the parent run carries through every create in the plan,
-        so a customer-facing PRD ends up with one consistent Activity Type."""
-        doc = _plan_doc(_slice_block("A"))
+    def test_override_propagates_to_every_slice_create(self):
+        """An override on the parent run carries through every slice create
+        in the plan, so a customer-facing PRD ends up with one consistent
+        Activity Type."""
+        doc = _plan_doc(_slice_block("A"), _slice_block("B"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(
             slices,
@@ -494,8 +467,9 @@ class TestRequiredFieldsInjection:
             required_fields=_TEST_REQUIRED_FIELDS,
             activity_type_override="Customer excellence",
         )
-        all_creates = _slice_create_actions(actions) + _subtask_actions(actions)
-        for a in all_creates:
+        creates = _slice_create_actions(actions)
+        assert len(creates) == 2
+        for a in creates:
             assert a["args"]["additional_fields"] == {
                 "customfield_12881": {"value": "Customer excellence"}
             }
@@ -504,7 +478,7 @@ class TestRequiredFieldsInjection:
         doc = _plan_doc(_slice_block("A"))
         slices = wjc.parse_slice_plan(doc)
         actions = wjc.emit_actions(slices, "PLTPM-99001", required_fields={})
-        for a in _slice_create_actions(actions) + _subtask_actions(actions):
+        for a in _slice_create_actions(actions):
             assert "additional_fields" not in a["args"]
 
     def test_invalid_override_raises_invalidsliceplan(self):
@@ -548,7 +522,7 @@ class TestActivityTypeFlagInMain:
         all_creates = [
             a for a in out["actions"] if a["tool"] == "atlassian.createJiraIssue"
         ]
-        assert len(all_creates) == 6  # 1 slice + 5 sub-tasks
+        assert len(all_creates) == 1  # 1 slice; PLTPM automation handles Sub-tasks
         for a in all_creates:
             assert a["args"]["additional_fields"] == {
                 "customfield_12881": {"value": "New feature"}

@@ -76,176 +76,6 @@
     },
     {
       "step": 4,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Development",
-        "description": "",
-        "parent": "{{slice_A_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 5,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Code Review 1",
-        "description": "",
-        "parent": "{{slice_A_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 6,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Code Review 2",
-        "description": "",
-        "parent": "{{slice_A_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 7,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Test case creation",
-        "description": "",
-        "parent": "{{slice_A_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 8,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Test case execution",
-        "description": "",
-        "parent": "{{slice_A_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice A (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 9,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Development",
-        "description": "",
-        "parent": "{{slice_B_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 10,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Code Review 1",
-        "description": "",
-        "parent": "{{slice_B_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 11,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Code Review 2",
-        "description": "",
-        "parent": "{{slice_B_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 12,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Test case creation",
-        "description": "",
-        "parent": "{{slice_B_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 13,
-      "tool": "atlassian.createJiraIssue",
-      "args": {
-        "projectKey": "PLTPM",
-        "issueType": "Sub-task",
-        "summary": "Test case execution",
-        "description": "",
-        "parent": "{{slice_B_key}}",
-        "additional_fields": {
-          "customfield_12881": {
-            "value": "Engineering excellence"
-          }
-        }
-      },
-      "purpose": "Ceremony Sub-task for slice B (per .agents/jira-conventions.md)."
-    },
-    {
-      "step": 14,
       "tool": "atlassian.createIssueLink",
       "args": {
         "type": "Implement",
@@ -255,7 +85,7 @@
       "purpose": "Mark slice A as implementing PLTPM-99002."
     },
     {
-      "step": 15,
+      "step": 5,
       "tool": "atlassian.createIssueLink",
       "args": {
         "type": "Implement",
@@ -265,7 +95,7 @@
       "purpose": "Mark slice B as implementing PLTPM-99002."
     },
     {
-      "step": 16,
+      "step": 6,
       "tool": "atlassian.createIssueLink",
       "args": {
         "type": "Implement",
@@ -275,7 +105,7 @@
       "purpose": "Mark slice C as implementing PLTPM-99002."
     },
     {
-      "step": 17,
+      "step": 7,
       "tool": "atlassian.createIssueLink",
       "args": {
         "type": "Blocks",

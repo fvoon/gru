@@ -99,15 +99,12 @@ $ python scripts/write_jira_children.py \
   "letters": ["A"],
   "actions": [
     {"step": 1, "tool": "atlassian.createJiraIssue", ..., "stores_as": "slice_A_key"},
-    {"step": 2, "tool": "atlassian.createJiraSubtask", "args": {"parentIssueKey": "{{slice_A_key}}", "summary": "Development", ...}},
-    ...
-    {"step": 6, "tool": "atlassian.createJiraSubtask", "args": {..., "summary": "Test case execution", ...}},
-    {"step": 7, "tool": "atlassian.createIssueLink", "args": {"type": "Implement", "inwardIssue": "PLTPM-99001", "outwardIssue": "{{slice_A_key}}"}}
+    {"step": 2, "tool": "atlassian.createIssueLink", "args": {"type": "Implement", "inwardIssue": "PLTPM-99001", "outwardIssue": "{{slice_A_key}}"}}
   ]
 }
 ```
 
-7 actions total. Phase 1 = 1 createIssue. Phase 2 = 5 Sub-tasks. Phase 3 = 1 Implement link. Phase 4 = 0 Blocks (no `depends_on:`).
+2 actions total. Phase 1 = 1 createIssue. Phase 2 = 1 Implement link. Phase 3 = 0 Blocks (no `depends_on:`). PLTPM Jira automation creates the 5 ceremony Sub-tasks under the new Task automatically — gru does not emit them. See `.agents/jira-conventions.md` "Ceremony Sub-tasks".
 
 **Step 6: Execute and post**
 
@@ -116,8 +113,8 @@ The agent calls each action in order, substituting `{{slice_A_key}}` with the re
 ```
 Created children for PLTPM-99001:
   Slice A → PLTPM-99003 (Task, payment-platform)
-    + 5 ceremony Sub-tasks
     + Implement link from PLTPM-99001
+    (PLTPM Jira automation auto-creates the 5 ceremony Sub-tasks under PLTPM-99003)
 
 Run ai-ready-check next to flip the slice into the next column.
 ```
@@ -207,24 +204,24 @@ See [`slice-plan-transfers-v3-redlined.md`](scripts/tests/fixtures/slice-plan-tr
 $ python scripts/write_jira_children.py --slice-plan redlines/PLTPM-99002.md --parent-key PLTPM-99002
 ```
 
-Action count: `3 createIssue + 5×2 Sub-tasks + 3 Implement links + 1 Blocks = 17 actions`.
+Action count: `3 createIssue + 3 Implement links + 1 Blocks = 7 actions`. PLTPM Jira automation creates the 5 ceremony Sub-tasks under each new Task automatically (slices A and B); slice C is `Research ` so the automation does not fire for it.
 
 Phase ordering (verified by the test goldens):
 
 1. createIssue A, B, C (in that order; each stores `slice_<letter>_key`).
-2. Sub-tasks for A (5), then Sub-tasks for B (5). C is a Research slice — skipped.
-3. Implement A→parent, Implement B→parent, Implement C→parent.
-4. `Blocks` link: `inwardIssue={{slice_B_key}}, outwardIssue={{slice_A_key}}` (slice A is blocked by B).
+2. Implement A→parent, Implement B→parent, Implement C→parent.
+3. `Blocks` link: `inwardIssue={{slice_B_key}}, outwardIssue={{slice_A_key}}` (slice A is blocked by B).
 
 Final chat output:
 
 ```
 Created children for PLTPM-99002:
-  Slice A → PLTPM-99004 (Task, payment-platform) + 5 Sub-tasks
-  Slice B → PLTPM-99005 (Task, walletapi) + 5 Sub-tasks
+  Slice A → PLTPM-99004 (Task, payment-platform)
+  Slice B → PLTPM-99005 (Task, walletapi)
   Slice C → PLTPM-99006 (Research, payment-platform)
   Implement links: parent → A, B, C
   Blocks chain: B blocks A
+  (PLTPM Jira automation auto-creates 5 ceremony Sub-tasks under A and B; C is Research, no Sub-tasks.)
 
 Run ai-ready-check next.
 ```
